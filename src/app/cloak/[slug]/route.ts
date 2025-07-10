@@ -44,6 +44,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
   let redirectTo = config.realUrl;
   let decision = 'real' as 'real' | 'fake';
 
+  // --- Start of Decision Logic ---
+
   if (config.emergency) {
     console.log(`[${slug}] Emergency mode ON. Redirecting to fake URL.`);
     redirectTo = config.fakeUrl;
@@ -53,12 +55,20 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
   const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
   const country = request.geo?.country || 'unknown';
+  const referer = request.headers.get('referer');
 
-  console.log(`[${slug}] Visitor Info: IP=${ip}, UA=${userAgent}, Country=${country}`);
+  console.log(`[${slug}] Visitor Info: IP=${ip}, UA=${userAgent}, Country=${country}, Referer=${referer}`);
 
   const userAgentLower = userAgent.toLowerCase();
   
-  if (config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
+  // Heuristic check for bots
+  if (!referer) {
+      console.log(`[${slug}] No referer header. Potential bot. Redirecting to fake URL.`);
+      redirectTo = config.fakeUrl;
+      decision = 'fake';
+  }
+  
+  else if (config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
     console.log(`[${slug}] Facebook Bot detected. Redirecting to fake URL.`);
     redirectTo = config.fakeUrl;
     decision = 'fake';
@@ -88,6 +98,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
     decision = 'fake';
   }
 
+  // --- End of Decision Logic ---
+
   console.log(`[${slug}] Final decision: Redirecting to ${redirectTo}`);
   
   // Save log to Firestore
@@ -97,6 +109,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
       ip: ip,
       country: country,
       userAgent: userAgent,
+      referer: referer || 'none',
       redirectedTo: decision,
       targetUrl: redirectTo,
       timestamp: new Date(),

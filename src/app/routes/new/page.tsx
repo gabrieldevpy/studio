@@ -16,7 +16,8 @@ const NewRouteForm = dynamic(() => import('@/components/new-route-form').then(mo
     <div className="space-y-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-          <Skeleton className="h-[350px] w-full" />
+          <Skeleton className="h-[120px] w-full" />
+          <Skeleton className="h-[450px] w-full" />
           <Skeleton className="h-[400px] w-full" />
           <Skeleton className="h-[250px] w-full" />
         </div>

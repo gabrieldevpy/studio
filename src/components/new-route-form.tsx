@@ -2,8 +2,8 @@
 "use client";
 
 import React from "react";
-import { FormProvider } from "react-hook-form";
-import { Loader2, Sparkles, FileText } from "lucide-react";
+import { FormProvider, useFieldArray } from "react-hook-form";
+import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,9 +29,22 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { Switch } from "@/components/ui/switch";
 import { ROUTE_TEMPLATES } from "@/lib/route-templates";
 import { useNewRouteForm } from "@/hooks/use-new-route-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export function NewRouteForm() {
   const { form, onSubmit, handleGenerateFakeUrl, isGenerating, applyTemplate, router } = useNewRouteForm();
+  
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "realUrls",
+  });
 
   return (
     <FormProvider {...form}>
@@ -78,22 +91,107 @@ export function NewRouteForm() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="realUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>URL Real</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://seu-lander-real.com" {...field} />
-                      </FormControl>
-                      <FormDescription>
+                 {/* Smart Rotation URLs Reais */}
+                 <div className="space-y-4 rounded-md border p-4">
+                    <FormField
+                      control={form.control}
+                      name="smartRotation"
+                      render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between">
+                            <div className="space-y-0.5">
+                              <FormLabel className="text-base flex items-center gap-2">
+                                <RotateCw className="h-4 w-4 text-primary" />
+                                Modo "Smart Rotation"
+                              </FormLabel>
+                              <FormDescription>
+                                Rotacione múltiplas URLs Reais para distribuir o tráfego.
+                              </FormDescription>
+                            </div>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                          </FormItem>
+                      )}
+                    />
+                    
+                    <div className={cn("space-y-4", !form.watch('smartRotation') && "hidden")}>
+                      <FormField
+                          control={form.control}
+                          name="rotationMode"
+                          render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Modo de Rotação</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione o modo de rotação" />
+                                    </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                    <SelectItem value="sequential">Sequencial</SelectItem>
+                                    <SelectItem value="random">Aleatório</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormDescription>
+                                    Como as URLs serão escolhidas a cada novo visitante.
+                                </FormDescription>
+                                <FormMessage />
+                              </FormItem>
+                          )}
+                      />
+                    </div>
+                  
+                  {fields.map((field, index) => (
+                    <FormField
+                      key={field.id}
+                      control={form.control}
+                      name={`realUrls.${index}.value`}
+                      render={({ field: formField }) => (
+                        <FormItem>
+                          <FormLabel className={cn(index !== 0 && "sr-only")}>
+                           {form.watch('smartRotation') ? `URL Real #${index + 1}` : 'URL Real'}
+                          </FormLabel>
+                          <div className="flex items-center gap-2">
+                            <Input {...formField} placeholder="https://seu-lander-real.com" />
+                            {form.watch('smartRotation') && fields.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-destructive"
+                                onClick={() => remove(index)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                  {form.watch('smartRotation') && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => append({ value: "" })}
+                      className="mt-2"
+                    >
+                      <PlusCircle className="mr-2 h-4 w-4" />
+                      Adicionar outra URL Real
+                    </Button>
+                  )}
+                   {!form.watch('smartRotation') && (
+                     <FormDescription>
                         O destino para tráfego real e de alta qualidade.
                       </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                   )}
+                </div>
+
                 <FormField
                   control={form.control}
                   name="fakeUrl"
@@ -104,7 +202,7 @@ export function NewRouteForm() {
                         <FormControl>
                           <Input placeholder="https://uma-pagina-segura.com" {...field} />
                         </FormControl>
-                        <Button type="button" variant="outline" onClick={handleGenerateFakeUrl} disabled={isGenerating}>
+                        <Button type="button" variant="outline" onClick={() => handleGenerateFakeUrl(form.getValues("realUrls")[0]?.value || '')} disabled={isGenerating}>
                           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4 text-primary" />}
                           <span className="ml-2 hidden md:inline">Gerar com IA</span>
                         </Button>

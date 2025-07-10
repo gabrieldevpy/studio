@@ -12,8 +12,10 @@ import type { RouteTemplate } from "@/lib/route-templates";
 
 const formSchema = z.object({
   slug: z.string().min(3, "O slug deve ter pelo menos 3 caracteres.").regex(/^[a-zA-Z0-9_-]+$/, "O slug pode conter apenas letras, números, hífens e sublinhados."),
-  realUrl: z.string().url("Por favor, insira uma URL válida.").or(z.literal('')),
+  realUrls: z.array(z.object({ value: z.string().url("Por favor, insira uma URL válida.") })).min(1, "É necessária pelo menos uma URL real."),
   fakeUrl: z.string().url("Por favor, insira uma URL válida.").or(z.literal('')),
+  smartRotation: z.boolean().default(false),
+  rotationMode: z.enum(['sequential', 'random']).default('sequential'),
   blockedIps: z.string().optional(),
   blockedUserAgents: z.string().optional(),
   allowedCountries: z.array(z.string()).optional(),
@@ -33,8 +35,10 @@ export function useNewRouteForm() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       slug: "",
-      realUrl: "",
+      realUrls: [{ value: "" }],
       fakeUrl: "",
+      smartRotation: false,
+      rotationMode: 'sequential',
       blockedIps: "",
       blockedUserAgents: "",
       allowedCountries: [],
@@ -45,10 +49,9 @@ export function useNewRouteForm() {
     },
   });
 
-  const handleGenerateFakeUrl = async () => {
-    const realUrl = form.getValues("realUrl");
+  const handleGenerateFakeUrl = async (realUrl?: string) => {
     if (!realUrl) {
-      form.setError("realUrl", { type: "manual", message: "Por favor, insira uma URL real primeiro." });
+      form.setError("realUrls.0.value", { type: "manual", message: "Por favor, insira uma URL real primeiro." });
       return;
     }
     
@@ -73,8 +76,9 @@ export function useNewRouteForm() {
   };
 
   const applyTemplate = (template: RouteTemplate) => {
+    const currentValues = form.getValues();
     form.reset({
-      ...form.getValues(), // preserve existing values not in template
+      ...currentValues,
       slug: template.slug,
       blockedIps: template.blockedIps.join('\n'),
       blockedUserAgents: template.blockedUserAgents.join('\n'),
@@ -82,9 +86,9 @@ export function useNewRouteForm() {
       blockedCountries: [],
       blockFacebookBots: template.blockFacebookBots,
       enableEmergency: template.enableEmergency,
-      realUrl: form.getValues('realUrl'), // ensure these are not cleared
-      fakeUrl: form.getValues('fakeUrl'),
-      notes: form.getValues('notes'),
+      // Keep URLs if they exist
+      realUrls: currentValues.realUrls[0]?.value ? currentValues.realUrls : [{ value: '' }],
+      fakeUrl: currentValues.fakeUrl || '',
     });
     
     toast({
@@ -93,8 +97,21 @@ export function useNewRouteForm() {
     });
   };
 
+
   function onSubmit(values: FormValues) {
-    console.log(values);
+    const finalValues = {
+        ...values,
+        realUrl: values.smartRotation ? values.realUrls.map(url => url.value) : values.realUrls[0].value,
+    };
+    // remove single-item array properties for cleaner data
+    if (!values.smartRotation) {
+        // @ts-ignore
+        delete finalValues.realUrls;
+        // @ts-ignore
+        finalValues.realUrl = finalValues.realUrl[0] || '';
+    }
+
+    console.log("Submitting:", finalValues);
     toast({
       title: "Rota Criada",
       description: "Sua nova rota foi criada com sucesso.",
