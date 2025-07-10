@@ -54,14 +54,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         <SidebarFooter>
            <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton>
+                <button className="flex items-center w-full gap-2 p-2 justify-start h-auto text-sm text-sidebar-foreground hover:bg-sidebar-accent rounded-md">
                     <Avatar className="h-8 w-8">
                         <AvatarImage src="https://placehold.co/40x40.png" alt="@usuario" data-ai-hint="user avatar" />
                         <AvatarFallback>U</AvatarFallback>
                     </Avatar>
                     <span className="flex-1 text-left">Usuário</span>
                     <ChevronDown className="h-4 w-4"/>
-                </SidebarMenuButton>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
                 <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
