@@ -74,7 +74,10 @@ export function SignupForm() {
         description,
       });
     } finally {
-      setLoading(false);
+      // Don't set loading to false if we're redirecting from email-already-in-use
+      if (loading) {
+        setLoading(false);
+      }
     }
   };
 
@@ -96,9 +99,6 @@ export function SignupForm() {
           <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Criar uma conta
-          </Button>
-          <Button variant="outline" className="w-full" disabled>
-            Cadastre-se com Google
           </Button>
         </div>
       </form>

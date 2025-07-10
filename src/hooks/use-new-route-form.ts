@@ -104,8 +104,8 @@ export function useNewRouteForm(existingRoute?: any) {
         realUrls: realUrls,
         fakeUrl: existingRoute.fakeUrl || "",
         smartRotation: existingRoute.smartRotation || false,
-        blockedIps: Array.isArray(existingRoute.blockedIps) ? existingRoute.blockedIps.join('\n') : "",
-        blockedUserAgents: Array.isArray(existingRoute.blockedUserAgents) ? existingRoute.blockedUserAgents.join('\n') : "",
+        blockedIps: Array.isArray(existingRoute.blockedIps) ? existingRoute.blockedIps.join('\n') : (existingRoute.blockedIps || ""),
+        blockedUserAgents: Array.isArray(existingRoute.blockedUserAgents) ? existingRoute.blockedUserAgents.join('\n') : (existingRoute.blockedUserAgents || ""),
         allowedCountries: existingRoute.allowedCountries || [],
         blockedCountries: existingRoute.blockedCountries || [],
         blockFacebookBots: existingRoute.blockFacebookBots ?? true,
@@ -188,7 +188,7 @@ export function useNewRouteForm(existingRoute?: any) {
     }
     
     // Create the base object with properties that are always present
-    const baseValues: any = {
+    const dataToSave: any = {
       ...values,
       userId: user.uid,
       blockedIps: values.blockedIps?.split('\n').filter(ip => ip.trim() !== '') || [],
@@ -197,24 +197,24 @@ export function useNewRouteForm(existingRoute?: any) {
     
     // Conditionally set realUrl based on smartRotation
     if (values.smartRotation) {
-        baseValues.realUrl = values.realUrls.map(url => url.value);
+        dataToSave.realUrl = values.realUrls.map(url => url.value);
     } else {
-        baseValues.realUrl = values.realUrls[0].value;
+        dataToSave.realUrl = values.realUrls[0].value;
     }
     
     // Remove the original realUrls array to avoid confusion in Firestore
-    delete baseValues.realUrls;
+    delete dataToSave.realUrls;
     
     try {
         if (isEditMode) {
             const routeRef = doc(db, "routes", existingRoute.id);
-            await updateDoc(routeRef, baseValues);
+            await updateDoc(routeRef, dataToSave);
             toast({
                 title: "Rota Atualizada!",
                 description: "Suas alterações foram salvas com sucesso.",
             });
         } else {
-            await addDoc(collection(db, "routes"), { ...baseValues, createdAt: new Date() });
+            await addDoc(collection(db, "routes"), { ...dataToSave, createdAt: new Date() });
             toast({
                 title: "Rota Criada!",
                 description: "Sua nova rota foi salva e está pronta para uso.",

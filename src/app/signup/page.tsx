@@ -5,6 +5,8 @@ import { Logo } from "@/components/icons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import dynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SignupForm = dynamic(() => import('@/components/signup-form').then(mod => mod.SignupForm), { 
   ssr: false,
@@ -43,6 +45,20 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <SignupForm />
+           <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="w-full mt-2">
+                            <Button variant="outline" className="w-full" disabled aria-label="Login com Google (Indisponível)">
+                                Login com Google
+                            </Button>
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>A autenticação com Google estará disponível em breve!</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
           <div className="mt-4 text-center text-sm">
             Já tem uma conta?{" "}
             <Link href="/login" className="underline">

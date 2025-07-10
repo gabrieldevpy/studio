@@ -109,7 +109,13 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                                             <FormControl>
                                                 <Switch
                                                     checked={field.value}
-                                                    onCheckedChange={field.onChange}
+                                                    onCheckedChange={(checked) => {
+                                                        if (!checked && fields.length > 1) {
+                                                            // If turning off, keep only the first URL
+                                                            form.setValue('realUrls', [fields[0]]);
+                                                        }
+                                                        field.onChange(checked);
+                                                    }}
                                                 />
                                             </FormControl>
                                         </FormItem>
@@ -346,7 +352,7 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                     <div className="space-y-8">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Configurações Padrão</CardTitle>
+                                <CardTitle>Configurações Gerais</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-6">
                                 <FormField

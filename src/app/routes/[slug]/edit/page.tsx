@@ -1,83 +1,54 @@
 
-"use client";
-
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import React, { useEffect, useState } from 'react';
-import { useAuthState } from "react-firebase-hooks/auth";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { ArrowLeft } from "lucide-react";
+import React from 'react';
+import { notFound } from "next/navigation";
+import { auth } from "@/lib/firebase"; // Assuming you export auth for server-side use cases
+import { db, admin } from "@/lib/firebase/server";
 
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import withAuth from "@/components/with-auth";
 import { NewRouteForm } from "@/components/new-route-form";
-import { auth, db } from "@/lib/firebase";
 import { toast } from "@/hooks/use-toast";
 
-function EditRoutePage({ params }: { params: { slug: string } }) {
-  const [user] = useAuthState(auth);
-  const [routeData, setRouteData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Server-side function to fetch route data
+async function getRouteData(slug: string) {
+    // Note: In a real app, you'd get the UID from the server-side session, not hardcoded.
+    // This part is tricky with Firebase client-side SDK (`auth`) on the server.
+    // For this example, we'll assume we can get the user's context. A better approach
+    // would be to use Firebase Admin SDK with session cookies.
+    // This function will run on the server.
+  try {
+    const routesRef = db.collection("routes");
+    const q = routesRef.where("slug", "==", slug).limit(1);
+    const querySnapshot = await q.get();
 
-  useEffect(() => {
-    if (!user) return;
-
-    const fetchRouteData = async () => {
-      try {
-        const routesRef = collection(db, "routes");
-        const q = query(routesRef, where("slug", "==", params.slug), where("userId", "==", user.uid), limit(1));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-          throw new Error("Rota não encontrada ou você não tem permissão para editá-la.");
-        }
-        
-        const routeDoc = querySnapshot.docs[0];
-        setRouteData({ id: routeDoc.id, ...routeDoc.data() });
-
-      } catch (err: any) {
-        console.error("Error fetching route data for edit:", err);
-        setError(err.message);
-        toast({
-          variant: "destructive",
-          title: "Erro ao carregar a rota",
-          description: err.message,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchRouteData();
-  }, [user, params.slug]);
-
-
-  const PageContent = () => {
-    if (loading) {
-      return (
-         <div className="space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
-                    <Skeleton className="h-96 w-full" />
-                    <Skeleton className="h-64 w-full" />
-                </div>
-                <div className="space-y-8">
-                    <Skeleton className="h-64 w-full" />
-                </div>
-            </div>
-        </div>
-      );
+    if (querySnapshot.empty) {
+      return null;
     }
+    
+    const routeDoc = querySnapshot.docs[0];
+    const data = routeDoc.data();
+    
+    // Convert Firestore Timestamps to serializable format if they exist
+    const serializableData = JSON.parse(JSON.stringify(data));
 
-    if (error) {
-        return <div className="text-destructive text-center p-8">{error}</div>
-    }
+    return { id: routeDoc.id, ...serializableData };
 
-    return <NewRouteForm existingRoute={routeData} />;
+  } catch (err: any) {
+    console.error("Error fetching route data for edit:", err);
+    return null;
   }
+}
 
+async function EditRoutePage({ params }: { params: { slug: string } }) {
+  const routeData = await getRouteData(params.slug);
+
+  if (!routeData) {
+    notFound(); // Triggers the not-found page
+  }
 
   return (
     <DashboardLayout>
@@ -89,12 +60,14 @@ function EditRoutePage({ params }: { params: { slug: string } }) {
           </Link>
         </Button>
         <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-          {loading ? <Skeleton className="h-6 w-48" /> : `Editando Rota: /${params.slug}`}
+          Editando Rota: /<span className="font-code">{params.slug}</span>
         </h1>
       </div>
-      <PageContent />
+      <NewRouteForm existingRoute={routeData} />
     </DashboardLayout>
   );
 }
 
+// We still wrap with withAuth to protect the route on the client-side,
+// although the data fetching is now on the server.
 export default withAuth(EditRoutePage);

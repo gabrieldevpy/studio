@@ -1,7 +1,7 @@
 
 "use client"
 import Link from "next/link"
-import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon, LogOut, Crown, AlertCircle } from "lucide-react"
+import { Plus, MoreHorizontal, CalendarIcon, Crown, AlertCircle } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
@@ -112,15 +112,18 @@ function DashboardPage() {
 
   const hasReachedLimit = routes.length >= userPlan.routeLimit;
 
-  const handleLogout = async () => {
-    await auth.signOut();
-    router.push('/login');
-  };
-
-  const handleToggleChange = async (id: string, field: 'emergency' | 'aiMode', checked: boolean) => {
-    const routeRef = doc(db, "routes", id);
+  const handleToggleChange = async (routeId: string, field: 'emergency' | 'aiMode', checked: boolean) => {
+    if (!routeId) {
+        toast({ variant: "destructive", title: "Erro", description: "ID da rota não encontrado." });
+        return;
+    }
+    const routeRef = doc(db, "routes", routeId);
     try {
         await updateDoc(routeRef, { [field]: checked });
+        
+        // Optimistic update
+        setRoutes(prevRoutes => prevRoutes.map(r => r.id === routeId ? {...r, [field]: checked} : r));
+
         const fieldName = field === 'emergency' ? 'Modo de Emergência' : 'Modo IA';
         toast({
             title: `${fieldName} ${checked ? 'Ativado' : 'Desativado'}`,
@@ -128,23 +131,35 @@ function DashboardPage() {
         });
     } catch (error) {
         console.error("Error updating route: ", error);
+        // Revert optimistic update on error
+        setRoutes(prevRoutes => prevRoutes.map(r => r.id === routeId ? {...r, [field]: !checked} : r));
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível atualizar a rota." });
     }
   };
 
   const handleDeleteRoute = async () => {
-    if (routeToDelete) {
-        try {
-            await deleteDoc(doc(db, "routes", routeToDelete.id));
-            toast({
-                title: "Rota Excluída",
-                description: `A rota /${routeToDelete.slug} foi excluída com sucesso.`,
-            });
-            setRouteToDelete(null);
-        } catch (error) {
-            console.error("Error deleting route: ", error);
-            toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a rota." });
-        }
+    if (!routeToDelete || !routeToDelete.id) {
+         toast({ variant: "destructive", title: "Erro", description: "Nenhuma rota selecionada para exclusão." });
+        return;
+    }
+
+    const routeIdToDelete = routeToDelete.id;
+    const originalRoutes = routes;
+    
+    // Optimistic update
+    setRoutes(prevRoutes => prevRoutes.filter(r => r.id !== routeIdToDelete));
+    setRouteToDelete(null);
+    
+    try {
+        await deleteDoc(doc(db, "routes", routeIdToDelete));
+        toast({
+            title: "Rota Excluída",
+            description: `A rota /${routeToDelete.slug} foi excluída com sucesso.`,
+        });
+    } catch (error) {
+        console.error("Error deleting route: ", error);
+        setRoutes(originalRoutes); // Revert on error
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a rota." });
     }
   };
   
@@ -165,10 +180,10 @@ function DashboardPage() {
       <div className="flex items-center mb-6" id="tour-step-1">
         <div className="flex-1">
           <h1 className="text-3xl font-bold">Painel</h1>
-          <p className="text-muted-foreground">Bem-vindo, {user?.email || 'usuário'}!</p>
+          <p className="text-muted-foreground">Bem-vindo, {user?.displayName || user?.email || 'usuário'}!</p>
         </div>
         <div className="flex items-center gap-4">
-            <Button variant="outline" asChild>
+             <Button variant="outline" asChild>
                 <Link href="/settings">
                     <Crown className="mr-2 h-4 w-4" /> Gerenciar Assinatura
                 </Link>
@@ -378,12 +393,6 @@ function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-       <div className="absolute bottom-4 right-4 flex items-center gap-4">
-          <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" /> Sair
-          </Button>
-      </div>
     </DashboardLayout>
   )
 }
