@@ -40,11 +40,11 @@ export default function ProxiesPage() {
 
   const onSubmit = (data: z.infer<typeof proxySchema>) => {
     const newProxy: Proxy = {
-        id: (proxies.length + 1).toString(),
+        id: new Date().getTime().toString(), // Use timestamp for a more unique ID
         value: data.proxy,
         status: 'unknown'
     };
-    setProxies([...proxies, newProxy]);
+    setProxies(prevProxies => [...prevProxies, newProxy]);
     form.reset();
     toast({
         title: "Proxy Adicionado",
@@ -53,7 +53,7 @@ export default function ProxiesPage() {
   };
 
   const removeProxy = (id: string) => {
-    setProxies(proxies.filter(p => p.id !== id));
+    setProxies(prevProxies => prevProxies.filter(p => p.id !== id));
      toast({
         title: "Proxy Removido",
         description: "O proxy foi removido da sua lista.",
@@ -62,10 +62,18 @@ export default function ProxiesPage() {
   }
   
   const testProxy = (id: string) => {
-    setProxies(proxies.map(p => p.id === id ? { ...p, status: 'testing' } : p));
+    setProxies(prevProxies => prevProxies.map(p => p.id === id ? { ...p, status: 'testing' } : p));
+    
     setTimeout(() => {
-        setProxies(proxies.map(p => p.id === id ? { ...p, status: Math.random() > 0.5 ? 'active' : 'inactive' } : p));
-    }, 2000)
+        setProxies(prevProxies => {
+            return prevProxies.map(p => {
+                if (p.id === id) {
+                    return { ...p, status: Math.random() > 0.5 ? 'active' : 'inactive' };
+                }
+                return p;
+            });
+        });
+    }, 2000);
   }
 
   const getStatusBadge = (status: Proxy['status']) => {
