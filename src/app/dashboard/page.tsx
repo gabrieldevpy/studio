@@ -34,6 +34,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { DashboardTour } from "@/components/dashboard-tour"
 
 type Route = {
   id: string;
@@ -86,12 +87,13 @@ export default function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <div className="flex items-center mb-6">
+      <DashboardTour />
+      <div className="flex items-center mb-6" id="tour-step-1">
         <div className="flex-1">
           <h1 className="text-3xl font-bold">Painel</h1>
           <p className="text-muted-foreground">Uma visão geral de suas rotas com cloaking.</p>
         </div>
-        <Button asChild>
+        <Button asChild id="tour-step-2">
           <Link href="/routes/new">
             <Plus className="mr-2 h-4 w-4" /> Criar Nova Rota
           </Link>
