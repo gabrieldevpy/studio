@@ -40,7 +40,7 @@ export default function ProxiesPage() {
 
   const onSubmit = (data: z.infer<typeof proxySchema>) => {
     const newProxy: Proxy = {
-        id: new Date().getTime().toString(), // Use timestamp for a more unique ID
+        id: `proxy_${new Date().getTime()}`,
         value: data.proxy,
         status: 'unknown'
     };
@@ -62,17 +62,18 @@ export default function ProxiesPage() {
   }
   
   const testProxy = (id: string) => {
-    setProxies(prevProxies => prevProxies.map(p => p.id === id ? { ...p, status: 'testing' } : p));
+    // Set status to 'testing' immediately
+    setProxies(prev => prev.map(p => p.id === id ? { ...p, status: 'testing' } : p));
     
+    // Simulate async test
     setTimeout(() => {
-        setProxies(prevProxies => {
-            return prevProxies.map(p => {
-                if (p.id === id) {
-                    return { ...p, status: Math.random() > 0.5 ? 'active' : 'inactive' };
-                }
-                return p;
-            });
-        });
+        // Update status based on the test result
+        const result: Proxy['status'] = Math.random() > 0.5 ? 'active' : 'inactive';
+        setProxies(currentProxies => 
+            currentProxies.map(p => 
+                p.id === id ? { ...p, status: result } : p
+            )
+        );
     }, 2000);
   }
 
@@ -116,12 +117,11 @@ export default function ProxiesPage() {
                                 <Server className="w-5 h-5 text-muted-foreground" />
                                 <span className="flex-1 font-code text-foreground truncate">{proxy.value}</span>
                                 {getStatusBadge(proxy.status)}
-                                {proxy.status !== 'testing' && (
+                                {proxy.status !== 'testing' ? (
                                     <Button variant="outline" size="sm" onClick={() => testProxy(proxy.id)}>
                                         Testar
                                     </Button>
-                                )}
-                                 {proxy.status === 'testing' && (
+                                ) : (
                                     <Button variant="outline" size="sm" disabled>
                                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                         Testando...
