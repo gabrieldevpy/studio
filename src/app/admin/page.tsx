@@ -61,7 +61,8 @@ function AdminPage() {
               setLoading(false);
               return;
             }
-            throw new Error('Failed to fetch admin data');
+            const errorText = await response.text();
+            throw new Error(`Failed to fetch admin data: ${response.status} - ${errorText}`);
           }
           const data: AdminData = await response.json();
           // Firestore Timestamps are serialized, so we need to convert them back
@@ -71,7 +72,7 @@ function AdminPage() {
           }));
           setAdminData(data);
         } catch (error) {
-          console.error("Error fetching admin data:", error);
+          console.error("Erro ao buscar dados do admin:", error);
            toast({
             variant: "destructive",
             title: "Erro ao carregar dados",
