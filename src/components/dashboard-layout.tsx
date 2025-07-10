@@ -1,5 +1,6 @@
 "use client"
 import Link from "next/link"
+import React, { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import { Home, Plus, Book, User, Settings, LogOut, ChevronDown } from "lucide-react"
 import {
@@ -22,6 +23,11 @@ import { Logo } from "./icons"
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isActive = (path: string) => pathname === path
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   return (
     <SidebarProvider>
@@ -52,35 +58,37 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-           <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center w-full gap-2 p-2 justify-start h-auto text-sm text-sidebar-foreground hover:bg-sidebar-accent rounded-md">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="@usuario" data-ai-hint="user avatar" />
-                        <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                    <span className="flex-1 text-left">Usuário</span>
-                    <ChevronDown className="h-4 w-4"/>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
-                <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Perfil</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configurações</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+           {isMounted && (
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center w-full gap-2 p-2 justify-start h-auto text-sm text-sidebar-foreground hover:bg-sidebar-accent rounded-md">
+                      <Avatar className="h-8 w-8">
+                          <AvatarImage src="https://placehold.co/40x40.png" alt="@usuario" data-ai-hint="user avatar" />
+                          <AvatarFallback>U</AvatarFallback>
+                      </Avatar>
+                      <span className="flex-1 text-left">Usuário</span>
+                      <ChevronDown className="h-4 w-4"/>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
+                  <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Perfil</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Configurações</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sair</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+           )}
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
