@@ -51,7 +51,7 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 {!isEditMode && (
-                    <Card className="mb-8">
+                    <Card className="mb-8" id="tour-step-5">
                         <CardHeader>
                             <CardTitle>Modelos de Rota</CardTitle>
                             <CardDescription>Comece rapidamente com configurações pré-definidas para plataformas populares.</CardDescription>
@@ -266,7 +266,7 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                                             <div className="space-y-0.5">
                                                 <FormLabel>Bloqueio por Rotação de IP</FormLabel>
                                                 <FormDescription>
-                                                    Bloqueia IPs que fazem muitas requisições em um curto período. Requer Redis (configuração externa).
+                                                    Bloqueia IPs que fazem muitas requisições em um curto período.
                                                 </FormDescription>
                                             </div>
                                             <FormControl>

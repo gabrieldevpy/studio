@@ -119,8 +119,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
       blockReason = 'No referer';
   }
   
-  const blockedIps = config.blockedIps || [];
-  const blockedUserAgents = config.blockedUserAgents || [];
+  const blockedIps = Array.isArray(config.blockedIps) ? config.blockedIps : [];
+  const blockedUserAgents = Array.isArray(config.blockedUserAgents) ? config.blockedUserAgents : [];
   
   // 5. Block User Agents (including specific Facebook rule)
   if (!blockReason && config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {

@@ -187,22 +187,14 @@ export function useNewRouteForm(existingRoute?: any) {
         }
     }
     
-    // Create the base object with properties that are always present
     const dataToSave: any = {
       ...values,
       userId: user.uid,
       blockedIps: values.blockedIps?.split('\n').filter(ip => ip.trim() !== '') || [],
       blockedUserAgents: values.blockedUserAgents?.split('\n').filter(ua => ua.trim() !== '') || [],
+      realUrl: values.smartRotation ? values.realUrls.map(url => url.value) : values.realUrls[0].value,
     };
     
-    // Conditionally set realUrl based on smartRotation
-    if (values.smartRotation) {
-        dataToSave.realUrl = values.realUrls.map(url => url.value);
-    } else {
-        dataToSave.realUrl = values.realUrls[0].value;
-    }
-    
-    // Remove the original realUrls array to avoid confusion in Firestore
     delete dataToSave.realUrls;
     
     try {

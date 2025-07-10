@@ -6,6 +6,7 @@ import UAParser from "ua-parser-js";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Globe, Bot, User, Computer, Smartphone, Tablet } from "lucide-react";
+import { collection, query, orderBy, onSnapshot, limit, where } from "firebase/firestore";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -13,49 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import withAuth from "@/components/with-auth";
-
-// Mock Firestore onSnapshot
-const onSnapshot = (collection: any, callback: (snapshot: any) => void) => {
-  const mockLogs = [
-    { id: '1', slug: 'promo-abc', ip: '123.45.67.89', country: 'US', timestamp: new Date(Date.now() - 10000), redirectedTo: 'real' as const, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36' },
-    { id: '2', slug: 'campaign-xyz', ip: '98.76.54.32', country: 'CA', timestamp: new Date(Date.now() - 30000), redirectedTo: 'fake' as const, userAgent: 'facebookexternalhit/1.1' },
-    { id: '3', slug: 'promo-abc', ip: '203.0.113.55', country: 'AU', timestamp: new Date(Date.now() - 60000), redirectedTo: 'real' as const, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1' },
-    { id: '5', slug: 'facebook-ad-1', ip: '8.8.8.8', country: 'US', timestamp: new Date(Date.now() - 120000), redirectedTo: 'fake' as const, userAgent: 'Googlebot/2.1 (+http://www.google.com/bot.html)' },
-  ];
-
-  let i = 0;
-  const interval = setInterval(() => {
-    i++;
-    const newLog = {
-        id: (mockLogs.length + i).toString(),
-        slug: 'promo-abc',
-        ip: `192.168.1.${i}`,
-        country: 'BR',
-        timestamp: new Date(),
-        redirectedTo: Math.random() > 0.5 ? 'real' : 'fake' as const,
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
-    };
-    
-    const combinedLogs = [newLog, ...mockLogs.map(l => ({...l}))];
-    const sortedDocs = combinedLogs
-        .sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime())
-        .map(d => ({id: d.id, data: () => ({...d, timestamp: { toDate: () => d.timestamp}})})
-    );
-    
-    const snapshot = {
-      docs: sortedDocs
-    };
-
-    callback(snapshot);
-  }, 5000);
-
-  // initial call
-  const initialSnapshot = { docs: mockLogs.sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()).map(d => ({id: d.id, data: () => ({...d, timestamp: { toDate: () => d.timestamp}})})) };
-  callback(initialSnapshot);
-
-  return () => clearInterval(interval); // Unsubscribe function
-};
-
+import { auth, db } from "@/lib/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
 
 type LogEntry = {
   id: string;
@@ -64,7 +24,7 @@ type LogEntry = {
   country: string;
   userAgent: string;
   redirectedTo: 'real' | 'fake';
-  timestamp: Date;
+  timestamp: any; // Firestore timestamp
   isNew?: boolean;
 };
 
@@ -91,12 +51,23 @@ const getFlagEmoji = (countryCode: string) => {
 function LiveFeedPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [user] = useAuthState(auth);
 
   useEffect(() => {
-    // In a real app, you would get the db instance from your firebase config
-    const mockCollection = { name: "logs", orderBy: () => {}, limit: () => {} };
+    if (!user) {
+        setLoading(false);
+        return;
+    }
 
-    const unsubscribe = onSnapshot(mockCollection, (snapshot: any) => {
+    const logsCollection = collection(db, "logs");
+    const q = query(
+        logsCollection, 
+        where("userId", "==", user.uid), 
+        orderBy("timestamp", "desc"), 
+        limit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
       setLoading(false);
       setLogs(currentLogs => {
         const newLogs = snapshot.docs.map((doc: any) => {
@@ -111,18 +82,17 @@ function LiveFeedPage() {
           return { ...log, isNew: !isExisting };
         });
 
-        // Merge and sort, keeping isNew status
         const allLogs = [...newLogs, ...currentLogs.map(l => ({...l, isNew: false}))]
-          .filter((v,i,a)=>a.findIndex(t=>(t.id === v.id))===i) // unique by id
+          .filter((v,i,a)=>a.findIndex(t=>(t.id === v.id))===i) 
           .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-          .slice(0, 50); // limit to 50 logs
+          .slice(0, 50);
 
         return allLogs;
       });
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [user]);
 
   return (
     <DashboardLayout>

@@ -53,6 +53,7 @@ import { useRouter } from "next/navigation";
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUserData } from "@/hooks/use-user-data";
+import { DashboardTour } from "@/components/dashboard-tour";
 
 type Route = {
   id: string;
@@ -216,6 +217,7 @@ function DashboardPage() {
 
   return (
     <DashboardLayout>
+      <DashboardTour />
       <div className="flex items-center mb-6" id="tour-step-1">
         <div className="flex-1">
           <h1 className="text-3xl font-bold">Painel</h1>
@@ -268,7 +270,7 @@ function DashboardPage() {
              <p className="text-xs text-muted-foreground">vs {analytics['24h'].suspicious.toLocaleString('pt-BR')} (24h)</p>
           </CardContent>
         </Card>
-        <Card className="col-span-full lg:col-span-1">
+        <Card className="col-span-full lg:col-span-1" id="tour-step-3">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Humanos vs. Bots</CardTitle>
               <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
@@ -323,7 +325,7 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 mb-6">
         <div className="col-span-1">
-          <Card>
+          <Card id="tour-step-4">
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <div>
