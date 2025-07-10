@@ -48,11 +48,22 @@ export function SignupForm() {
     } catch (error: any) {
       console.error(error);
       let description = "Ocorreu um erro ao criar sua conta. Tente novamente.";
+      
       if (error.code === 'auth/email-already-in-use') {
-        description = "Este e-mail já está em uso. Tente fazer login.";
+        description = "Este e-mail já está em uso. Redirecionando para o login...";
+        toast({
+            variant: "destructive",
+            title: "Erro de Cadastro",
+            description,
+        });
+        setTimeout(() => {
+          router.push('/login');
+        }, 2000);
+        return; // Retorna para não exibir o toast padrão no finally
       } else if (error.code === 'auth/weak-password') {
         description = "Sua senha é muito fraca. Ela deve ter pelo menos 6 caracteres.";
       }
+      
       toast({
         variant: "destructive",
         title: "Erro de Cadastro",
