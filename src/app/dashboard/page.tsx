@@ -44,6 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { StealthEvolution } from "@/components/stealth-evolution";
 
 type Route = {
   id: string;
@@ -194,71 +195,79 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Suas Rotas</CardTitle>
-          <CardDescription>Gerencie suas rotas e veja o desempenho delas.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Status</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead>URL Real</TableHead>
-                <TableHead>URL Falsa</TableHead>
-                <TableHead className="text-center">Modo de Emergência</TableHead>
-                <TableHead className="text-right">Cliques Totais</TableHead>
-                <TableHead>
-                  <span className="sr-only">Ações</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {routes.map((route) => (
-                <TableRow key={route.id}>
-                  <TableCell>
-                    <Badge variant={route.status === 'ativo' ? 'default' : 'secondary'} className={route.status === 'ativo' ? 'bg-green-500/20 text-green-400 border-green-500/20' : ''}>{route.status}</Badge>
-                  </TableCell>
-                  <TableCell className="font-medium font-code">/{route.slug}</TableCell>
-                  <TableCell>
-                    <a href={route.realUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.realUrl}</a>
-                  </TableCell>
-                  <TableCell>
-                    <a href={route.fakeUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.fakeUrl}</a>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch 
-                      checked={route.emergency} 
-                      onCheckedChange={(checked) => handleEmergencyChange(route.id, checked)}
-                      aria-label="Modo de Emergência" 
-                      className="data-[state=checked]:bg-destructive" />
-                  </TableCell>
-                  <TableCell className="text-right">{route.clicks.toLocaleString('pt-BR')}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Alternar menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                        <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/logs`}>Ver Logs</Link></DropdownMenuItem>
-                        <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/edit`}>Editar</Link></DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => setRouteToDelete(route)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                          Excluir
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+        <div className="xl:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Suas Rotas</CardTitle>
+              <CardDescription>Gerencie suas rotas e veja o desempenho delas.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Slug</TableHead>
+                    <TableHead>URL Real</TableHead>
+                    <TableHead>URL Falsa</TableHead>
+                    <TableHead className="text-center">Modo de Emergência</TableHead>
+                    <TableHead className="text-right">Cliques Totais</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Ações</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {routes.map((route) => (
+                    <TableRow key={route.id}>
+                      <TableCell>
+                        <Badge variant={route.status === 'ativo' ? 'default' : 'secondary'} className={route.status === 'ativo' ? 'bg-green-500/20 text-green-400 border-green-500/20' : ''}>{route.status}</Badge>
+                      </TableCell>
+                      <TableCell className="font-medium font-code">/{route.slug}</TableCell>
+                      <TableCell>
+                        <a href={route.realUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.realUrl}</a>
+                      </TableCell>
+                      <TableCell>
+                        <a href={route.fakeUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.fakeUrl}</a>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Switch 
+                          checked={route.emergency} 
+                          onCheckedChange={(checked) => handleEmergencyChange(route.id, checked)}
+                          aria-label="Modo de Emergência" 
+                          className="data-[state=checked]:bg-destructive" />
+                      </TableCell>
+                      <TableCell className="text-right">{route.clicks.toLocaleString('pt-BR')}</TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal className="h-4 w-4" />
+                              <span className="sr-only">Alternar menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                            <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/logs`}>Ver Logs</Link></DropdownMenuItem>
+                            <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/edit`}>Editar</Link></DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setRouteToDelete(route)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="xl:col-span-1">
+          <StealthEvolution />
+        </div>
+      </div>
+
       <AlertDialog open={!!routeToDelete} onOpenChange={(open) => !open && setRouteToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -279,5 +288,3 @@ export default function DashboardPage() {
     </DashboardLayout>
   )
 }
-
-    
