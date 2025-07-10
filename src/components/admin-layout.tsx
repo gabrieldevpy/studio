@@ -3,7 +3,7 @@
 import Link from "next/link"
 import React from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2 } from "lucide-react"
+import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2, UserPlus } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -39,7 +39,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // After loading, if user is not logged in or is not an admin, deny access.
   if (!user || !isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -90,6 +89,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuButton href="/admin/settings" asChild isActive={isActive('/admin/settings')} tooltip="Configurações">
                  <Link href="/admin/settings"><Settings /><span>Configurações</span></Link>
               </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton href="/admin/add-admin-instructions" asChild isActive={isActive('/admin/add-admin-instructions')} tooltip="Adicionar Admin">
+                    <Link href="/admin/add-admin-instructions"><UserPlus /><span>Adicionar Admin</span></Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
                 <SidebarMenuButton href="/dashboard" asChild tooltip="Voltar ao App">
