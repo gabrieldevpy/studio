@@ -21,6 +21,7 @@ const formSchema = z.object({
   allowedCountries: z.array(z.string()).optional(),
   blockedCountries: z.array(z.string()).optional(),
   blockFacebookBots: z.boolean().default(true),
+  aiMode: z.boolean().default(true),
   enableEmergency: z.boolean().default(false),
   notes: z.string().optional(),
 });
@@ -44,6 +45,7 @@ export function useNewRouteForm() {
       allowedCountries: [],
       blockedCountries: [],
       blockFacebookBots: true,
+      aiMode: true,
       enableEmergency: true,
       notes: "",
     },
@@ -85,6 +87,7 @@ export function useNewRouteForm() {
       allowedCountries: template.allowedCountries,
       blockedCountries: [],
       blockFacebookBots: template.blockFacebookBots,
+      aiMode: template.aiMode,
       enableEmergency: template.enableEmergency,
       // Keep URLs if they exist
       realUrls: currentValues.realUrls[0]?.value ? currentValues.realUrls : [{ value: '' }],

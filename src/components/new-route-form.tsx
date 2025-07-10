@@ -3,7 +3,7 @@
 
 import React from "react";
 import { FormProvider, useFieldArray } from "react-hook-form";
-import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw } from "lucide-react";
+import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw, BrainCircuit } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -361,10 +361,33 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Configurações</CardTitle>
+                <CardTitle>Configurações Avançadas</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-4">
                 <FormField
+                  control={form.control}
+                  name="aiMode"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2">
+                          <BrainCircuit className="h-4 w-4 text-primary" />
+                          Modo IA "Stealth Evolution"
+                        </FormLabel>
+                        <FormDescription>
+                          Permitir que a IA aprenda e sugira novas regras de bloqueio.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                 <FormField
                   control={form.control}
                   name="enableEmergency"
                   render={({ field }) => (
@@ -372,11 +395,11 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                       <div className="space-y-0.5">
                         <FormLabel className="text-base">Botão de Emergência</FormLabel>
                         <FormDescription>
-                          Ative um botão de um clique para forçar todo o tráfego para a URL falsa.
+                          Ative para forçar todo o tráfego para a URL falsa com um clique.
                         </FormDescription>
                       </div>
-                      <FormControl>
-                        <Checkbox
+                       <FormControl>
+                        <Switch
                           checked={field.value}
                           onCheckedChange={field.onChange}
                         />

@@ -12,6 +12,7 @@ export interface RouteTemplate {
     blockedUserAgents: string[];
     allowedCountries: string[];
     blockFacebookBots: boolean;
+    aiMode: boolean;
     enableEmergency: boolean;
 }
 
@@ -37,6 +38,7 @@ export const ROUTE_TEMPLATES: RouteTemplate[] = [
         ],
         allowedCountries: ["BR", "PT"],
         blockFacebookBots: true,
+        aiMode: true,
         enableEmergency: true,
     },
     {
@@ -59,6 +61,7 @@ export const ROUTE_TEMPLATES: RouteTemplate[] = [
         ],
         allowedCountries: ["BR", "AR", "CL"],
         blockFacebookBots: false,
+        aiMode: true,
         enableEmergency: true,
     },
     {
@@ -78,6 +81,7 @@ export const ROUTE_TEMPLATES: RouteTemplate[] = [
         ],
         allowedCountries: ["BR", "MX"],
         blockFacebookBots: false,
+        aiMode: true,
         enableEmergency: true,
     },
 ];

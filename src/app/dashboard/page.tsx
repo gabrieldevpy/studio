@@ -1,7 +1,7 @@
 
 "use client"
 import Link from "next/link"
-import { Plus, MoreHorizontal, BarChart2, CalendarIcon } from "lucide-react"
+import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon } from "lucide-react"
 import React from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -53,16 +53,17 @@ type Route = {
   fakeUrl: string;
   status: string;
   emergency: boolean;
+  aiMode: boolean;
   clicks: number;
   realClicks: number;
   fakeClicks: number;
 };
 
 const initialMockRoutes: Route[] = [
-  { id: '1', slug: 'promo-abc', realUrl: 'https://real-product.com/offer', fakeUrl: 'https://google.com', status: 'ativo', emergency: false, clicks: 1204, realClicks: 980, fakeClicks: 224 },
-  { id: '2', slug: 'campaign-xyz', realUrl: 'https://another-real-one.com/page', fakeUrl: 'https://bing.com', status: 'ativo', emergency: true, clicks: 873, realClicks: 650, fakeClicks: 223 },
-  { id: '3', slug: 'lander-v2', realUrl: 'https://my-affiliate-link.com/product', fakeUrl: 'https://duckduckgo.com', status: 'inativo', emergency: false, clicks: 0, realClicks: 0, fakeClicks: 0 },
-  { id: '4', slug: 'facebook-ad-1', realUrl: 'https://secret-landing-page.io/special', fakeUrl: 'https://yahoo.com', status: 'ativo', emergency: false, clicks: 5432, realClicks: 4987, fakeClicks: 445 },
+  { id: '1', slug: 'promo-abc', realUrl: 'https://real-product.com/offer', fakeUrl: 'https://google.com', status: 'ativo', emergency: false, aiMode: true, clicks: 1204, realClicks: 980, fakeClicks: 224 },
+  { id: '2', slug: 'campaign-xyz', realUrl: 'https://another-real-one.com/page', fakeUrl: 'https://bing.com', status: 'ativo', emergency: true, aiMode: false, clicks: 873, realClicks: 650, fakeClicks: 223 },
+  { id: '3', slug: 'lander-v2', realUrl: 'https://my-affiliate-link.com/product', fakeUrl: 'https://duckduckgo.com', status: 'inativo', emergency: false, aiMode: true, clicks: 0, realClicks: 0, fakeClicks: 0 },
+  { id: '4', slug: 'facebook-ad-1', realUrl: 'https://secret-landing-page.io/special', fakeUrl: 'https://yahoo.com', status: 'ativo', emergency: false, aiMode: true, clicks: 5432, realClicks: 4987, fakeClicks: 445 },
 ]
 
 const analyticsData = {
@@ -81,15 +82,17 @@ export default function DashboardPage() {
   const [routeToDelete, setRouteToDelete] = React.useState<Route | null>(null);
   const [timeRange, setTimeRange] = React.useState<keyof typeof analyticsData>("7d")
 
-  const handleEmergencyChange = (id: string, checked: boolean) => {
+  const handleToggleChange = (id: string, field: 'emergency' | 'aiMode', checked: boolean) => {
     const updatedRoutes = routes.map(route =>
-      route.id === id ? { ...route, emergency: checked } : route
+      route.id === id ? { ...route, [field]: checked } : route
     );
     setRoutes(updatedRoutes);
     
     const currentRoute = routes.find(r => r.id === id);
+    const fieldName = field === 'emergency' ? 'Modo de Emergência' : 'Modo IA';
+
     toast({
-      title: `Modo de Emergência ${checked ? 'Ativado' : 'Desativado'}`,
+      title: `${fieldName} ${checked ? 'Ativado' : 'Desativado'}`,
       description: `A rota /${currentRoute?.slug} foi atualizada.`,
     });
   };
@@ -209,7 +212,7 @@ export default function DashboardPage() {
                     <TableHead>Status</TableHead>
                     <TableHead>Slug</TableHead>
                     <TableHead>URL Real</TableHead>
-                    <TableHead>URL Falsa</TableHead>
+                    <TableHead className="text-center">Modo IA</TableHead>
                     <TableHead className="text-center">Modo de Emergência</TableHead>
                     <TableHead className="text-right">Cliques Totais</TableHead>
                     <TableHead>
@@ -227,13 +230,16 @@ export default function DashboardPage() {
                       <TableCell>
                         <a href={route.realUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.realUrl}</a>
                       </TableCell>
-                      <TableCell>
-                        <a href={route.fakeUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.fakeUrl}</a>
+                      <TableCell className="text-center">
+                        <Switch 
+                          checked={route.aiMode} 
+                          onCheckedChange={(checked) => handleToggleChange(route.id, 'aiMode', checked)}
+                          aria-label="Modo IA" />
                       </TableCell>
                       <TableCell className="text-center">
                         <Switch 
                           checked={route.emergency} 
-                          onCheckedChange={(checked) => handleEmergencyChange(route.id, checked)}
+                          onCheckedChange={(checked) => handleToggleChange(route.id, 'emergency', checked)}
                           aria-label="Modo de Emergência" 
                           className="data-[state=checked]:bg-destructive" />
                       </TableCell>

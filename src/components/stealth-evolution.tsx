@@ -7,7 +7,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { MOCK_LOGS } from "@/lib/mock-logs";
 import { toast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 type Suggestion = {
   type: "ip" | "userAgent";
@@ -20,8 +21,11 @@ const SUSPICIOUS_IP_THRESHOLD = 3;
 
 export function StealthEvolution() {
   const [ignoredSuggestions, setIgnoredSuggestions] = useState<string[]>([]);
+  const [aiEnabled, setAiEnabled] = useState(true);
 
   const suggestions = useMemo(() => {
+    if (!aiEnabled) return [];
+
     const ipCounts: Record<string, number> = {};
     
     // Analyze logs to find suspicious patterns
@@ -46,7 +50,7 @@ export function StealthEvolution() {
     }
     
     return newSuggestions.sort((a, b) => b.count - a.count);
-  }, []);
+  }, [aiEnabled]);
 
   const activeSuggestions = suggestions.filter(s => !ignoredSuggestions.includes(s.value));
   
@@ -66,19 +70,39 @@ export function StealthEvolution() {
     })
   }
 
+  const handleAiToggle = (enabled: boolean) => {
+    setAiEnabled(enabled);
+    toast({
+      title: `Stealth Evolution ${enabled ? 'Ativado' : 'Desativado'}`,
+      description: "O sistema de sugestões foi atualizado."
+    });
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Lightbulb className="text-primary" />
-          Sugestões da IA
-        </CardTitle>
-        <CardDescription>
-          Nosso sistema "Stealth Evolution" analisa seus logs e sugere novas regras para otimizar sua proteção.
-        </CardDescription>
+        <div className="flex justify-between items-start">
+            <div className="flex-1">
+                <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="text-primary" />
+                Stealth Evolution
+                </CardTitle>
+                <CardDescription>
+                Sugestões da IA para otimizar sua proteção.
+                </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+                <Switch 
+                    id="ai-mode" 
+                    checked={aiEnabled} 
+                    onCheckedChange={handleAiToggle}
+                />
+                <Label htmlFor="ai-mode">Ativar</Label>
+            </div>
+        </div>
       </CardHeader>
       <CardContent>
-        {activeSuggestions.length > 0 ? (
+        {aiEnabled && activeSuggestions.length > 0 ? (
           <div className="space-y-4">
             {activeSuggestions.map((suggestion, index) => (
               <div key={index} className="flex flex-col gap-3 rounded-lg border p-3 bg-card-foreground/5">
@@ -107,8 +131,8 @@ export function StealthEvolution() {
           </div>
         ) : (
           <div className="text-center text-sm text-muted-foreground py-8">
-            <p>Nenhuma nova sugestão no momento.</p>
-            <p>Continue monitorando!</p>
+            <p>{aiEnabled ? 'Nenhuma nova sugestão no momento.' : 'O modo de IA está desativado.'}</p>
+            <p>{aiEnabled ? 'Continue monitorando!' : 'Ative para receber sugestões.'}</p>
           </div>
         )}
       </CardContent>
