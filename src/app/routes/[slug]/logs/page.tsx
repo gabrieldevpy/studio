@@ -29,6 +29,7 @@ const mockLogs = [
 
 export default function LogsPage({ params }: { params: { slug: string } }) {
   const [search, setSearch] = React.useState("")
+  const routeParams = React.use(params)
 
   const filteredLogs = mockLogs.filter(log => log.ip.includes(search))
 
@@ -45,7 +46,7 @@ export default function LogsPage({ params }: { params: { slug: string } }) {
           <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
             Logs de Acesso
           </h1>
-          <p className="text-muted-foreground text-sm">Mostrando logs para a rota: <span className="font-code text-foreground">{params.slug}</span></p>
+          <p className="text-muted-foreground text-sm">Mostrando logs para a rota: <span className="font-code text-foreground">{routeParams.slug}</span></p>
         </div>
       </div>
       <Card>
