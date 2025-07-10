@@ -1,7 +1,7 @@
 
 "use client"
 import Link from "next/link"
-import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon, LogOut, Crown } from "lucide-react"
+import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon, LogOut, Crown, AlertCircle } from "lucide-react"
 import React from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -50,6 +50,8 @@ import withAuth from "@/components/with-auth";
 import { auth } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useRouter } from "next/navigation";
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 type Route = {
   id: string;
@@ -62,6 +64,12 @@ type Route = {
   clicks: number;
   realClicks: number;
   fakeClicks: number;
+};
+
+// Mock user plan and limits
+const userPlan = {
+  name: "Iniciante",
+  routeLimit: 5
 };
 
 const initialMockRoutes: Route[] = [
@@ -88,6 +96,8 @@ function DashboardPage() {
   const [timeRange, setTimeRange] = React.useState<keyof typeof analyticsData>("7d")
   const [user, loading] = useAuthState(auth);
   const router = useRouter();
+
+  const hasReachedLimit = routes.length >= userPlan.routeLimit;
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -132,6 +142,14 @@ function DashboardPage() {
 
   const currentData = analyticsData[timeRange];
   const totalClicks = currentData.reduce((acc, entry) => acc + entry.value, 0);
+  
+  const CreateRouteButton = () => (
+    <Button asChild id="tour-step-2" disabled={hasReachedLimit}>
+        <Link href="/routes/new">
+            <Plus className="mr-2 h-4 w-4" /> Criar Nova Rota
+        </Link>
+    </Button>
+  );
 
   return (
     <DashboardLayout>
@@ -147,11 +165,23 @@ function DashboardPage() {
                     <Crown className="mr-2 h-4 w-4" /> Gerenciar Assinatura
                 </Link>
             </Button>
-            <Button asChild id="tour-step-2">
-            <Link href="/routes/new">
-                <Plus className="mr-2 h-4 w-4" /> Criar Nova Rota
-            </Link>
-            </Button>
+            {hasReachedLimit ? (
+                <TooltipProvider>
+                    <UiTooltip>
+                        <TooltipTrigger asChild>
+                            <span tabIndex={0}><CreateRouteButton /></span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4" />
+                                Você atingiu o limite de rotas do plano {userPlan.name}.
+                            </p>
+                        </TooltipContent>
+                    </UiTooltip>
+                </TooltipProvider>
+            ) : (
+                <CreateRouteButton />
+            )}
         </div>
       </div>
 
@@ -231,8 +261,16 @@ function DashboardPage() {
         <div className="xl:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>Suas Rotas</CardTitle>
-              <CardDescription>Gerencie suas rotas e veja o desempenho delas.</CardDescription>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Suas Rotas</CardTitle>
+                        <CardDescription>Gerencie suas rotas e veja o desempenho delas.</CardDescription>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm font-medium text-muted-foreground">Uso de Rotas</p>
+                        <p className="text-lg font-bold">{routes.length}<span className="text-base font-normal text-muted-foreground">/{userPlan.routeLimit}</span></p>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
               <Table>
