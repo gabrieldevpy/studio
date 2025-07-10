@@ -14,6 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/lib/firebase";
 
 type User = {
   id: string;
@@ -39,6 +41,7 @@ type AdminData = {
 
 function AdminPage() {
   const { userData, loading: userLoading } = useUserData();
+  const [authUser, authLoading] = useAuthState(auth);
   const router = useRouter();
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,11 +59,17 @@ function AdminPage() {
   }, [userData, userLoading, router]);
 
   useEffect(() => {
-    if (isAuthorized) {
+    if (isAuthorized && authUser) {
       const fetchAdminData = async () => {
         setLoading(true);
         try {
-          const response = await fetch('/api/admin/stats');
+          const idToken = await authUser.getIdToken();
+          const response = await fetch('/api/admin/stats', {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+
           if (!response.ok) {
             throw new Error('Failed to fetch admin data');
           }
@@ -68,7 +77,7 @@ function AdminPage() {
           // Firestore Timestamps are serialized, so we need to convert them back
           data.recentUsers = data.recentUsers.map(user => ({
             ...user,
-            createdAt: user.createdAt ? new Date(user.createdAt._seconds * 1000) : new Date()
+            createdAt: user.createdAt ? new Date((user.createdAt as any)._seconds * 1000) : new Date()
           }));
           setAdminData(data);
         } catch (error) {
@@ -84,9 +93,9 @@ function AdminPage() {
       };
       fetchAdminData();
     }
-  }, [isAuthorized]);
+  }, [isAuthorized, authUser]);
 
-  if (userLoading || loading || isAuthorized === null) {
+  if (userLoading || authLoading || loading || isAuthorized === null) {
      return (
         <AdminLayout>
              <div className="flex items-center mb-6">

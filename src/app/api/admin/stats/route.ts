@@ -4,10 +4,10 @@ import { db, admin } from '@/lib/firebase/server';
 import { headers } from 'next/headers';
 
 // This function checks if the user making the request is an admin
-async function isAdmin(request: NextRequest): Promise<boolean> {
+async function isAdmin(request: NextRequest): Promise<{is_admin: boolean, uid: string | null}> {
   const authorization = headers().get('Authorization');
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return false;
+    return {is_admin: false, uid: null};
   }
   const idToken = authorization.split('Bearer ')[1];
 
@@ -16,18 +16,19 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
     const userDoc = await db.collection('users').doc(decodedToken.uid).get();
     
     if (!userDoc.exists) {
-      return false;
+      return {is_admin: false, uid: null};
     }
 
-    return userDoc.data()?.admin === true;
+    return {is_admin: userDoc.data()?.admin === true, uid: decodedToken.uid};
   } catch (error) {
     console.error('Error verifying admin token:', error);
-    return false;
+    return {is_admin: false, uid: null};
   }
 }
 
 export async function GET(request: NextRequest) {
-  if (!(await isAdmin(request))) {
+  const { is_admin, uid } = await isAdmin(request);
+  if (!is_admin || !uid) {
     return new NextResponse('Unauthorized', { status: 403 });
   }
 
