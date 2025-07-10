@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import { Plus, MoreHorizontal, AlertTriangle } from "lucide-react"
+import { Plus, MoreHorizontal } from "lucide-react"
 import React from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -24,8 +24,31 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { toast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
-const initialMockRoutes = [
+type Route = {
+  id: string;
+  slug: string;
+  realUrl: string;
+  fakeUrl: string;
+  status: string;
+  emergency: boolean;
+  clicks: number;
+  realClicks: number;
+  fakeClicks: number;
+};
+
+
+const initialMockRoutes: Route[] = [
   { id: '1', slug: 'promo-abc', realUrl: 'https://real-product.com/offer', fakeUrl: 'https://google.com', status: 'ativo', emergency: false, clicks: 1204, realClicks: 980, fakeClicks: 224 },
   { id: '2', slug: 'campaign-xyz', realUrl: 'https://another-real-one.com/page', fakeUrl: 'https://bing.com', status: 'ativo', emergency: true, clicks: 873, realClicks: 650, fakeClicks: 223 },
   { id: '3', slug: 'lander-v2', realUrl: 'https://my-affiliate-link.com/product', fakeUrl: 'https://duckduckgo.com', status: 'inativo', emergency: false, clicks: 0, realClicks: 0, fakeClicks: 0 },
@@ -34,6 +57,7 @@ const initialMockRoutes = [
 
 export default function DashboardPage() {
   const [routes, setRoutes] = React.useState(initialMockRoutes);
+  const [routeToDelete, setRouteToDelete] = React.useState<Route | null>(null);
 
   const handleEmergencyChange = (id: string, checked: boolean) => {
     const updatedRoutes = routes.map(route =>
@@ -47,6 +71,18 @@ export default function DashboardPage() {
       description: `A rota /${currentRoute?.slug} foi atualizada.`,
     });
   };
+
+  const handleDeleteRoute = () => {
+    if (routeToDelete) {
+      setRoutes(routes.filter(route => route.id !== routeToDelete.id));
+      toast({
+        title: "Rota Excluída",
+        description: `A rota /${routeToDelete.slug} foi excluída com sucesso.`,
+      });
+      setRouteToDelete(null);
+    }
+  };
+
 
   return (
     <DashboardLayout>
@@ -113,8 +149,10 @@ export default function DashboardPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/logs`}>Ver Logs</Link></DropdownMenuItem>
-                        <DropdownMenuItem>Editar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500">Excluir</DropdownMenuItem>
+                        <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/edit`}>Editar</Link></DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => setRouteToDelete(route)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                          Excluir
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -124,6 +162,23 @@ export default function DashboardPage() {
           </Table>
         </CardContent>
       </Card>
+      <AlertDialog open={!!routeToDelete} onOpenChange={(open) => !open && setRouteToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente a rota 
+              <span className="font-bold font-code text-foreground"> /{routeToDelete?.slug}</span> e todos os seus dados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteRoute} className="bg-destructive hover:bg-destructive/90">
+              Sim, excluir rota
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   )
 }
