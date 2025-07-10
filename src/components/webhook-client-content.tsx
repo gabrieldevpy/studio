@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -13,10 +12,14 @@ import { Separator } from "@/components/ui/separator";
 const CodeBlock = ({ text }: { text: string }) => {
     const [copied, setCopied] = useState(false);
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+    const handleCopy = async () => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (error) {
+            console.error("Falha ao copiar para clipboard:", error);
+        }
     };
 
     return (
@@ -39,9 +42,17 @@ export default function WebhookClientContent() {
     const [isSaving, setIsSaving] = useState(false);
     const [isTesting, setIsTesting] = useState(false);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         setIsSaving(true);
-        if (webhookUrl && (webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://hooks.slack.com/"))) {
+
+        // Simula um delay para mostrar o spinner de loading
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+        if (
+            webhookUrl &&
+            (webhookUrl.startsWith("https://discord.com/api/webhooks/") ||
+                webhookUrl.startsWith("https://hooks.slack.com/"))
+        ) {
             console.log("Saving Webhook URL:", webhookUrl);
             toast({
                 title: "Webhook Salvo!",
@@ -54,11 +65,18 @@ export default function WebhookClientContent() {
                 description: "Por favor, insira uma URL de webhook válida (Discord ou Slack).",
             });
         }
+
         setIsSaving(false);
     };
     
     const handleTestWebhook = async () => {
-        if (!webhookUrl || !(webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://hooks.slack.com/"))) {
+        if (
+            !webhookUrl ||
+            !(
+                webhookUrl.startsWith("https://discord.com/api/webhooks/") ||
+                webhookUrl.startsWith("https://hooks.slack.com/")
+            )
+        ) {
             toast({
                 variant: "destructive",
                 title: "URL Inválida",
@@ -73,36 +91,38 @@ export default function WebhookClientContent() {
             username: "CloakDash Teste",
             avatar_url: "https://i.imgur.com/4M34hi2.png",
             content: "Se você recebeu esta mensagem, seu webhook está funcionando!",
-            embeds: [{
-                title: "✅ Notificação de Teste",
-                color: 5763719, // Verde
-                description: "Esta é uma mensagem de teste do CloakDash para confirmar que sua configuração de webhook está correta.",
-                timestamp: new Date().toISOString()
-            }]
+            embeds: [
+                {
+                    title: "✅ Notificação de Teste",
+                    color: 5763719, // Verde
+                    description: "Esta é uma mensagem de teste do CloakDash para confirmar que sua configuração de webhook está correta.",
+                    timestamp: new Date().toISOString(),
+                },
+            ],
         };
 
         try {
             const response = await fetch(webhookUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(testPayload)
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(testPayload),
             });
 
             if (response.ok) {
-                 toast({
+                toast({
                     title: "Teste Enviado!",
                     description: "A notificação de teste foi enviada com sucesso para o seu webhook.",
                 });
             } else {
                 throw new Error(`O servidor respondeu com o status ${response.status}`);
             }
-
         } catch (error) {
             console.error("Webhook test failed:", error);
             toast({
                 variant: "destructive",
                 title: "Falha no Teste",
-                description: "Não foi possível enviar a notificação. Verifique a URL do webhook e as permissões do seu servidor.",
+                description:
+                    "Não foi possível enviar a notificação. Verifique a URL do webhook e as permissões do seu servidor.",
             });
         } finally {
             setIsTesting(false);
@@ -115,7 +135,9 @@ export default function WebhookClientContent() {
                 <div className="lg:col-span-3">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Webhook className="text-primary"/> Configurar Webhook</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <Webhook className="text-primary" /> Configurar Webhook
+                            </CardTitle>
                             <CardDescription>
                                 Receba notificações em tempo real no seu servidor do Discord ou canal do Slack sobre eventos importantes.
                             </CardDescription>
@@ -137,11 +159,11 @@ export default function WebhookClientContent() {
                         </CardContent>
                         <CardFooter className="gap-2">
                             <Button onClick={handleSave} disabled={isSaving}>
-                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Salvar
                             </Button>
-                             <Button variant="outline" onClick={handleTestWebhook} disabled={isTesting}>
-                                {isTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            <Button variant="outline" onClick={handleTestWebhook} disabled={isTesting}>
+                                {isTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Enviar Teste
                             </Button>
                         </CardFooter>
@@ -150,7 +172,9 @@ export default function WebhookClientContent() {
                 <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Webhook />Como obter a URL do Webhook</CardTitle>
+                            <CardTitle className="flex items-center gap-2">
+                                <Webhook />Como obter a URL do Webhook
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 text-sm">
                             <p className="font-semibold text-foreground">Discord:</p>
@@ -163,12 +187,12 @@ export default function WebhookClientContent() {
                                 <p>Clique em <strong>"Criar Webhook"</strong> e depois em <strong>"Copiar URL do Webhook"</strong>.</p>
                             </div>
                             <Separator />
-                             <p className="font-semibold text-foreground">Slack:</p>
-                             <div className="flex items-start gap-4">
+                            <p className="font-semibold text-foreground">Slack:</p>
+                            <div className="flex items-start gap-4">
                                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold flex-shrink-0">1</div>
                                 <p>Crie um novo App Slack, vá para <strong>"Incoming Webhooks"</strong> e ative-o.</p>
                             </div>
-                             <div className="flex items-start gap-4">
+                            <div className="flex items-start gap-4">
                                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold flex-shrink-0">2</div>
                                 <p>Clique em <strong>"Add New Webhook to Workspace"</strong>, escolha um canal e copie a URL.</p>
                             </div>
@@ -176,7 +200,7 @@ export default function WebhookClientContent() {
                     </Card>
                 </div>
             </div>
-             <Card className="mt-8">
+            <Card className="mt-8">
                 <CardHeader>
                     <CardTitle>Exemplo de Payload</CardTitle>
                     <CardDescription>
@@ -184,7 +208,8 @@ export default function WebhookClientContent() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <CodeBlock text={`{
+                    <CodeBlock
+                        text={`{
   "username": "CloakDash Alert",
   "avatar_url": "https://i.imgur.com/4M34hi2.png",
   "embeds": [{
@@ -199,7 +224,8 @@ export default function WebhookClientContent() {
     ],
     "timestamp": "2024-07-31T12:00:00.000Z"
   }]
-}`} />
+}`}
+                    />
                 </CardContent>
             </Card>
         </>

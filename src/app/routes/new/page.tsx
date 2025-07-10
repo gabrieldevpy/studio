@@ -3,11 +3,9 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import dynamic from 'next/dynamic';
 
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { Skeleton } from "@/components/ui/skeleton";
 import withAuth from "@/components/with-auth";
 import { NewRouteForm } from "@/components/new-route-form";
 

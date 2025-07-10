@@ -26,10 +26,6 @@ function EditRoutePage({ params }: { params: { slug: string } }) {
 
     const fetchRouteData = async () => {
       try {
-        // Since slug is unique per user, we can use it to find the route doc.
-        // In a real-world scenario with non-unique slugs, you'd query by slug and userId.
-        // For now, we assume we need the doc ID to fetch, which we don't have here.
-        // Let's find the route document by its slug.
         const routesRef = collection(db, "routes");
         const q = query(routesRef, where("slug", "==", params.slug), where("userId", "==", user.uid), limit(1));
         const querySnapshot = await getDocs(q);
@@ -62,7 +58,6 @@ function EditRoutePage({ params }: { params: { slug: string } }) {
     if (loading) {
       return (
          <div className="space-y-8">
-            <Skeleton className="h-48 w-full" />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8">
                     <Skeleton className="h-96 w-full" />

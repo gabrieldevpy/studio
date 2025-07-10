@@ -1,19 +1,17 @@
 
 "use client";
 
-import React, { useState } from "react";
-import { FormProvider, useFieldArray } from "react-hook-form";
-import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw, BrainCircuit, ShieldAlert, Timer, DatabaseZap, Code, MousePointerClick } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
+import { useFieldArray, FormProvider } from "react-hook-form";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import {
+  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -21,13 +19,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { COUNTRIES } from "@/lib/countries";
-import { MultiSelect } from "@/components/ui/multi-select";
-import { Switch } from "@/components/ui/switch";
-import { ROUTE_TEMPLATES } from "@/lib/route-templates";
-import { useNewRouteForm } from "@/hooks/use-new-route-form";
 import {
   Select,
   SelectContent,
@@ -35,77 +26,76 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
-
-const CodeBlock = ({ text }: { text: string }) => (
-    <pre className="mt-2 rounded-md bg-muted p-4 font-code text-sm text-muted-foreground overflow-x-auto">
-        <code>{text}</code>
-    </pre>
-);
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { Separator } from "@/components/ui/separator";
+import { useNewRouteForm } from "@/hooks/use-new-route-form";
+import { COUNTRIES } from "@/lib/countries";
+import { ROUTE_TEMPLATES } from "@/lib/route-templates";
+import { Loader2, Trash2, BrainCircuit, Wand2 } from "lucide-react";
 
 export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
-  const { form, onSubmit, handleGenerateFakeUrl, isGenerating, isSubmitting, applyTemplate, router } = useNewRouteForm(existingRoute);
-  
-  const [showIpRotationModal, setShowIpRotationModal] = useState(false);
-  const [showCdnInjectionModal, setShowCdnInjectionModal] = useState(false);
-  const [showHoneypotModal, setShowHoneypotModal] = useState(false);
-  
+  const isEditMode = !!existingRoute;
+  const {
+    form,
+    onSubmit,
+    handleGenerateFakeUrl,
+    isGenerating,
+    isSubmitting,
+    applyTemplate,
+    router,
+  } = useNewRouteForm(existingRoute);
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "realUrls",
   });
-  
-  const isEditMode = !!existingRoute;
-
-  const handleSwitchChange = (field: "ipRotation" | "cdnInjection" | "honeypot", checked: boolean) => {
-    if (!checked) {
-        form.setValue(field, false);
-        return;
-    }
-    if (field === 'ipRotation') setShowIpRotationModal(true);
-    if (field === 'cdnInjection') setShowCdnInjectionModal(true);
-    if (field === 'honeypot') setShowHoneypotModal(true);
-  }
 
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         {!isEditMode && (
             <Card className="mb-8">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><FileText className="text-primary"/> Usar um Template</CardTitle>
-                <CardDescription>Comece rapidamente com configurações pré-definidas para as plataformas de anúncio mais populares.</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {ROUTE_TEMPLATES.map((template) => (
-                <Button key={template.id} variant="outline" type="button" className="justify-start gap-3 h-12 text-base" onClick={() => applyTemplate(template)}>
-                    {template.icon}
-                    {template.name}
-                </Button>
-                ))}
-            </CardContent>
+                <CardHeader>
+                    <CardTitle>Modelos de Rota</CardTitle>
+                    <CardDescription>Comece rapidamente com configurações pré-definidas para plataformas populares.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {ROUTE_TEMPLATES.map((template) => (
+                            <Button
+                                key={template.id}
+                                variant="outline"
+                                className="h-auto p-4 flex flex-col items-start text-left justify-start"
+                                onClick={() => applyTemplate(template)}
+                                type="button"
+                            >
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="text-2xl">{template.icon}</div>
+                                    <span className="font-semibold text-base">{template.name}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Clique para aplicar as configurações para {template.name}.</p>
+                            </Button>
+                        ))}
+                    </div>
+                </CardContent>
             </Card>
         )}
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <Card>
               <CardHeader>
-                <CardTitle>Detalhes da Rota</CardTitle>
+                <CardTitle>Configuração Essencial</CardTitle>
                 <CardDescription>
-                  Defina a lógica de redirecionamento principal para sua rota.
+                  Defina o endereço da sua rota e para onde os visitantes serão
+                  redirecionados.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
                   name="slug"
@@ -113,134 +103,102 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                     <FormItem>
                       <FormLabel>Slug da Rota</FormLabel>
                       <div className="flex items-center">
-                        <span className="p-2 rounded-l-md bg-muted text-muted-foreground text-sm">cloakdash.com/cloak/</span>
-                        <Input placeholder="promo-abc" {...field} className="rounded-l-none" disabled={isEditMode}/>
+                        <span className="text-muted-foreground bg-muted h-10 px-3 flex items-center rounded-l-md border border-r-0 border-input">
+                          cloakdash.com/
+                        </span>
+                        <Input
+                          {...field}
+                          placeholder="minha-campanha-secreta"
+                          className="rounded-l-none"
+                          disabled={isEditMode}
+                        />
                       </div>
                       <FormDescription>
-                        Um identificador único para sua rota. {isEditMode && 'Não pode ser alterado após a criação.'}
+                        O identificador único para sua rota.
+                        {isEditMode && " Não pode ser alterado."}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                 {/* Smart Rotation URLs Reais */}
-                 <div className="space-y-4 rounded-md border p-4">
-                    <FormField
-                      control={form.control}
-                      name="smartRotation"
-                      render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between">
-                            <div className="space-y-0.5">
-                              <FormLabel className="text-base flex items-center gap-2">
-                                <RotateCw className="h-4 w-4 text-primary" />
-                                Modo "Smart Rotation"
-                              </FormLabel>
-                              <FormDescription>
-                                Rotacione múltiplas URLs Reais para distribuir o tráfego.
-                              </FormDescription>
-                            </div>
-                            <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
-                            </FormControl>
-                          </FormItem>
-                      )}
-                    />
-                    
-                    <div className={cn("space-y-4", !form.watch('smartRotation') && "hidden")}>
+
+                <Separator />
+
+                <div>
+                  <FormLabel>URL(s) Real(is) (Money Page)</FormLabel>
+                  <FormDescription className="mb-4">
+                    Para onde os visitantes reais serão enviados. Adicione
+                    múltiplas URLs para rotação.
+                  </FormDescription>
+
+                  <div className="space-y-4">
+                    {fields.map((field, index) => (
                       <FormField
-                          control={form.control}
-                          name="rotationMode"
-                          render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Modo de Rotação</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                    <FormControl>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecione o modo de rotação" />
-                                    </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                    <SelectItem value="sequential">Sequencial</SelectItem>
-                                    <SelectItem value="random">Aleatório</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormDescription>
-                                    Como as URLs serão escolhidas a cada novo visitante.
-                                </FormDescription>
-                                <FormMessage />
-                              </FormItem>
-                          )}
-                      />
-                    </div>
-                  
-                  {fields.map((field, index) => (
-                    <FormField
-                      key={field.id}
-                      control={form.control}
-                      name={`realUrls.${index}.value`}
-                      render={({ field: formField }) => (
-                        <FormItem>
-                          <FormLabel className={cn(index !== 0 && "sr-only")}>
-                           {form.watch('smartRotation') ? `URL Real #${index + 1}` : 'URL Real'}
-                          </FormLabel>
-                          <div className="flex items-center gap-2">
-                            <Input {...formField} placeholder="https://seu-lander-real.com" />
-                            {form.watch('smartRotation') && fields.length > 1 && (
+                        key={field.id}
+                        control={form.control}
+                        name={`realUrls.${index}.value`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-2">
+                              <Input {...field} placeholder="https://sua-oferta.com" />
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="text-muted-foreground hover:text-destructive"
                                 onClick={() => remove(index)}
+                                disabled={fields.length <= 1}
                               >
-                                <Trash className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
-                            )}
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                  {form.watch('smartRotation') && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => append({ value: "" })}
-                      className="mt-2"
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Adicionar outra URL Real
-                    </Button>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+
+                  {form.watch("smartRotation") && (
+                    <div className="mt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => append({ value: "" })}
+                      >
+                        Adicionar outra URL
+                      </Button>
+                    </div>
                   )}
-                   {!form.watch('smartRotation') && (
-                     <FormDescription>
-                        O destino para tráfego real e de alta qualidade.
-                      </FormDescription>
-                   )}
                 </div>
 
+                <Separator />
+                
                 <FormField
                   control={form.control}
                   name="fakeUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL Falsa</FormLabel>
-                      <div className="flex gap-2">
-                        <FormControl>
-                          <Input placeholder="https://uma-pagina-segura.com" {...field} />
-                        </FormControl>
-                        <Button type="button" variant="outline" onClick={() => handleGenerateFakeUrl(form.getValues("realUrls")[0]?.value || '')} disabled={isGenerating}>
-                          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4 text-primary" />}
-                          <span className="ml-2 hidden md:inline">Gerar com IA</span>
+                      <div className="flex justify-between items-center">
+                        <FormLabel>URL Falsa (Safe Page)</FormLabel>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleGenerateFakeUrl(form.getValues("realUrls.0.value"))}
+                            disabled={isGenerating}
+                            className="text-primary hover:text-primary"
+                        >
+                            {isGenerating ? (<Loader2 className="mr-2 h-4 w-4 animate-spin"/>) : (<Wand2 className="mr-2 h-4 w-4" />)}
+                            Gerar com IA
                         </Button>
                       </div>
+                      <Input
+                        {...field}
+                        placeholder="https://pagina-segura.com"
+                      />
                       <FormDescription>
-                        O destino para bots e tráfego indesejado.
+                        Para onde bots e tráfego indesejado serão enviados.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -248,166 +206,159 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                 />
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader>
-                <CardTitle>Listas de Bloqueio</CardTitle>
+                <CardTitle>Filtragem e Bloqueio</CardTitle>
                 <CardDescription>
-                  Bloqueie IPs e User-Agents específicos.
+                  Defina as regras para bloquear tráfego indesejado.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="blockFacebookBots"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Bloquear Bots do Facebook</FormLabel>
-                        <FormDescription>
-                          Redireciona automaticamente os rastreadores do Facebook para a URL falsa.
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
+              <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
                   name="blockedIps"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>IPs Bloqueados</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="123.45.67.89
-192.168.1.0/24" className="min-h-32 font-code" {...field} />
-                      </FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Um endereço IP por linha. Ex: 1.2.3.4"
+                        className="font-code"
+                        rows={5}
+                      />
                       <FormDescription>
-                        Insira um endereço IP ou intervalo CIDR por linha.
+                        Bloqueia visitantes com estes endereços IP.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <FormField
                   control={form.control}
                   name="blockedUserAgents"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>User-Agents Bloqueados (Adicionais)</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder="GoogleBot
-AhrefsBot" className="min-h-32 font-code" {...field} />
-                      </FormControl>
+                      <FormLabel>User-Agents Bloqueados</FormLabel>
+                      <Textarea
+                        {...field}
+                        placeholder="Uma palavra-chave de user-agent por linha. Ex: Googlebot"
+                        className="font-code"
+                        rows={5}
+                      />
                       <FormDescription>
-                        Insira uma string de User-Agent por linha (correspondências parciais são suportadas).
+                        Bloqueia visitantes se o user-agent contiver qualquer
+                        uma destas palavras.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+                
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="allowedCountries"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Países Permitidos</FormLabel>
+                           <MultiSelect
+                            options={COUNTRIES}
+                            selected={field.value || []}
+                            onChange={field.onChange}
+                            placeholder="Selecione os países..."
+                          />
+                          <FormDescription>
+                            Se preenchido, apenas visitantes destes países acessarão a URL real.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="blockedCountries"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Países Bloqueados</FormLabel>
+                           <MultiSelect
+                            options={COUNTRIES}
+                            selected={field.value || []}
+                            onChange={field.onChange}
+                            placeholder="Selecione os países..."
+                          />
+                          <FormDescription>
+                           Visitantes destes países serão sempre enviados para a URL falsa.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                </div>
+
+                 <FormField
+                  control={form.control}
+                  name="blockFacebookBots"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                      <div className="space-y-0.5">
+                        <FormLabel>Bloquear Bots do Facebook</FormLabel>
+                        <FormDescription>
+                          Ativa regras específicas para os crawlers mais comuns
+                          do Facebook.
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
               </CardContent>
             </Card>
+
             <Card>
                 <CardHeader>
-                  <CardTitle>Observações</CardTitle>
-                  <CardDescription>
-                    Adicione notas internas para esta rota. Elas não serão visíveis publicamente.
-                  </CardDescription>
+                    <CardTitle>Notas da Rota</CardTitle>
+                    <CardDescription>Adicione notas ou comentários sobre esta rota para sua referência futura.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Suas Notas</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Ex: Campanha de dia dos pais no Facebook, otimizada para..."
-                            className="min-h-32"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                     <FormField
+                        control={form.control}
+                        name="notes"
+                        render={({ field }) => (
+                            <FormItem>
+                                <Textarea {...field} placeholder="Ex: Campanha de Dia das Mães no Facebook, público de interesse em maquiagem..." rows={4} />
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                        />
                 </CardContent>
-              </Card>
-          </div>
-          <div className="space-y-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Geo-Targeting</CardTitle>
-                <CardDescription>
-                  Filtre o tráfego com base no país.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-              <FormField
-                  control={form.control}
-                  name="allowedCountries"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Países Permitidos</FormLabel>
-                      <MultiSelect
-                        options={COUNTRIES}
-                        selected={field.value || []}
-                        onChange={field.onChange}
-                        placeholder="Selecione países..."
-                        className="w-full"
-                      />
-                      <FormDescription>
-                        Permitir tráfego apenas desses países. Deixe em branco para permitir todos.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="blockedCountries"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Países Bloqueados</FormLabel>
-                      <MultiSelect
-                        options={COUNTRIES}
-                        selected={field.value || []}
-                        onChange={field.onChange}
-                        placeholder="Selecione países..."
-                        className="w-full"
-                      />
-                      <FormDescription>
-                        Bloquear tráfego desses países.
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
             </Card>
+
+          </div>
+
+          <div className="space-y-8">
             <Card>
               <CardHeader>
                 <CardTitle>Configurações Padrão</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-1">
+              <CardContent className="space-y-4">
                  <FormField
                   control={form.control}
                   name="aiMode"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2">
-                          <BrainCircuit className="h-4 w-4 text-primary" />
-                          Modo IA
-                        </FormLabel>
+                        <FormLabel>Modo IA</FormLabel>
                         <FormDescription>
-                          Permitir que a IA aprenda e sugira novas regras.
+                          Permite que a IA analise e bloqueie tráfego
+                          suspeito.
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -419,18 +370,49 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                     </FormItem>
                   )}
                 />
-                 <FormField
+
+                <FormField
                   control={form.control}
                   name="enableEmergency"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                       <div className="space-y-0.5">
-                        <FormLabel className="text-base">Botão de Emergência</FormLabel>
+                        <FormLabel>Botão de Emergência</FormLabel>
                         <FormDescription>
-                          Habilitar botão para forçar a URL falsa.
+                          Habilita o botão para forçar todos os visitantes para a
+                          URL falsa.
                         </FormDescription>
                       </div>
-                       <FormControl>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          className="data-[state=checked]:bg-destructive"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BrainCircuit className="text-primary" /> Rotação Inteligente
+                </CardTitle>
+                 <CardDescription>
+                  Distribua o tráfego entre múltiplas URLs Reais.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                 <FormField
+                  control={form.control}
+                  name="smartRotation"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between">
+                      <FormLabel>Ativar Rotação de URLs</FormLabel>
+                      <FormControl>
                         <Switch
                           checked={field.value}
                           onCheckedChange={field.onChange}
@@ -439,28 +421,56 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                     </FormItem>
                   )}
                 />
+                
+                {form.watch("smartRotation") && (
+                   <FormField
+                      control={form.control}
+                      name="rotationMode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Modo de Rotação</FormLabel>
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Selecione o modo"/>
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="sequential">Sequencial</SelectItem>
+                                    <SelectItem value="random">Aleatório</SelectItem>
+                                </SelectContent>
+                           </Select>
+                           <FormDescription>
+                                Como o tráfego será distribuído entre as URLs.
+                           </FormDescription>
+                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                )}
               </CardContent>
             </Card>
+            
             <Card>
               <CardHeader>
                 <CardTitle>Proteções Avançadas</CardTitle>
                  <CardDescription>
-                  Adicione camadas extras de segurança para enganar bots sofisticados.
+                  Recursos adicionais para ofuscar suas páginas.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-1">
-                <FormField
+              <CardContent className="space-y-4">
+                 <FormField
                   control={form.control}
                   name="randomDelay"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2"><Timer className="h-4 w-4 text-primary"/>Delay Aleatório</FormLabel>
-                        <FormDescription>
-                           Aplica um atraso de 600-2200ms antes do redirecionamento final.
-                        </FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
+                    <FormItem className="flex flex-row items-center justify-between">
+                      <FormLabel>Atraso Aleatório</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
@@ -468,148 +478,67 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                   control={form.control}
                   name="ipRotation"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2"><DatabaseZap className="h-4 w-4 text-primary"/>IP Rotation Redirect</FormLabel>
-                        <FormDescription>
-                            Redireciona IPs com alta frequência de acesso. Requer setup externo.
-                        </FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={(checked) => handleSwitchChange('ipRotation', checked)} /></FormControl>
+                    <FormItem className="flex flex-row items-center justify-between">
+                      <FormLabel>Rotação de IP</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
-                <FormField
+                 <FormField
                   control={form.control}
                   name="cdnInjection"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2"><Code className="h-4 w-4 text-primary"/>CDN-Injection Fake</FormLabel>
-                        <FormDescription>
-                            Simula que sua página está em um CDN. Requer setup na sua URL Real.
-                        </FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={(checked) => handleSwitchChange('cdnInjection', checked)} /></FormControl>
+                    <FormItem className="flex flex-row items-center justify-between">
+                      <FormLabel>Injeção de CDN</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
-                <FormField
+                 <FormField
                   control={form.control}
                   name="honeypot"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2"><MousePointerClick className="h-4 w-4 text-primary"/>Honeypot Invisível</FormLabel>
-                        <FormDescription>
-                            Cria uma "armadilha" para bots na sua página. Requer setup na URL Real.
-                        </FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={(checked) => handleSwitchChange('honeypot', checked)} /></FormControl>
+                    <FormItem className="flex flex-row items-center justify-between">
+                      <FormLabel>Página Honeypot</FormLabel>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />
               </CardContent>
             </Card>
+
           </div>
         </div>
+
         <div className="flex justify-end gap-2">
-          <Button variant="outline" type="button" onClick={() => router.push('/dashboard')} disabled={isSubmitting}>Cancelar</Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push("/dashboard")}
+          >
+            Cancelar
+          </Button>
           <Button type="submit" disabled={isSubmitting}>
-             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-             {isSubmitting ? 'Salvando...' : (isEditMode ? 'Salvar Alterações' : 'Criar Rota')}
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isEditMode ? "Salvar Alterações" : "Criar Rota"}
           </Button>
         </div>
       </form>
-       {/* IP Rotation Modal */}
-       <Dialog open={showIpRotationModal} onOpenChange={setShowIpRotationModal}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Como Ativar o IP Rotation Redirect</DialogTitle>
-                    <DialogDescription>
-                        Esta funcionalidade requer uma configuração externa para funcionar.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 text-sm">
-                    <p>O IP Rotation precisa de um banco de dados de cache rápido (como <span className="font-semibold">Redis</span> ou <span className="font-semibold">Memcached</span>) para rastrear a frequência de acesso de cada IP em tempo real.</p>
-                    <p className="font-semibold">Passos para configurar:</p>
-                    <ol className="list-decimal list-inside space-y-2">
-                        <li>Configure uma instância do Redis acessível pela sua aplicação.</li>
-                        <li>No arquivo <code className="font-code text-primary">/src/app/cloak/[slug]/route.ts</code>, descomente o pseudo-código e adicione sua lógica de conexão com o Redis para incrementar e verificar o contador de acessos do IP.</li>
-                    </ol>
-                    <p>Ativar esta opção apenas salva a preferência no banco de dados. A lógica de bloqueio precisa ser implementada por você no back-end.</p>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                    <Button onClick={() => {
-                        form.setValue('ipRotation', true);
-                        setShowIpRotationModal(false);
-                    }}>Entendi, Ativar</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-        
-        {/* CDN Injection Modal */}
-        <Dialog open={showCdnInjectionModal} onOpenChange={setShowCdnInjectionModal}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Como Ativar o CDN-Injection Fake</DialogTitle>
-                    <DialogDescription>
-                        Esta funcionalidade deve ser implementada na sua URL Real.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 text-sm">
-                    <p>A "Injeção de CDN" é uma técnica para fazer sua página de destino (URL Real) parecer mais legítima, simulando que seus scripts são carregados de um CDN conhecido.</p>
-                     <p className="font-semibold">Como implementar:</p>
-                     <ol className="list-decimal list-inside space-y-2">
-                        <li>No código HTML da sua <span className="font-semibold">URL Real</span>, adicione um script que carrega dinamicamente seu script principal.</li>
-                        <li>Use um nome de arquivo que pareça vir de um CDN, por exemplo:</li>
-                    </ol>
-                     <CodeBlock text={`<script src="https://cdn.your-domain.com/assets/main.js"></script>`} />
-                    <p>Ativar esta opção no painel serve como um lembrete para você implementar esta técnica. Não há alteração automática no comportamento do redirecionamento.</p>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                    <Button onClick={() => {
-                        form.setValue('cdnInjection', true);
-                        setShowCdnInjectionModal(false);
-                    }}>Entendi, Ativar</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        {/* Honeypot Modal */}
-        <Dialog open={showHoneypotModal} onOpenChange={setShowHoneypotModal}>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Como Ativar o Honeypot Invisível</DialogTitle>
-                    <DialogDescription>
-                        Esta funcionalidade deve ser implementada na sua URL Real.
-                    </DialogDescription>
-                </DialogHeader>
-                 <div className="space-y-4 text-sm">
-                    <p>Um "Honeypot" (pote de mel) é uma armadilha para bots. Adicionamos um link ou botão invisível na página que apenas bots (que analisam o código-fonte) conseguiriam "ver" e clicar.</p>
-                     <p className="font-semibold">Como implementar:</p>
-                     <ol className="list-decimal list-inside space-y-2">
-                        <li>Adicione o seguinte código HTML no `<body>` da sua <span className="font-semibold">URL Real</span>:</li>
-                    </ol>
-                     <CodeBlock text={`<div style="opacity: 0; position: absolute; top: 0; left: 0; height: 1px; width: 1px; z-index: -1;">
-  <a href="https://example.com/bot-trap">Não clique aqui</a>
-</div>`} />
-                    <p>
-                        2. Crie uma regra no servidor ou na sua aplicação para banir qualquer visitante que acesse a URL <code className="font-code text-primary">/bot-trap</code>.
-                    </p>
-                    <p>Ativar esta opção no painel serve como um lembrete para você implementar esta técnica.</p>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-                    <Button onClick={() => {
-                        form.setValue('honeypot', true);
-                        setShowHoneypotModal(false);
-                    }}>Entendi, Ativar</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
     </FormProvider>
   );
 }

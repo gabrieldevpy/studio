@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { generateFakeUrl } from "@/ai/flows/generate-fake-url";
 import type { RouteTemplate } from "@/lib/route-templates";
-import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, query, where, getDocs, limit } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 
@@ -29,15 +29,37 @@ const formSchema = z.object({
   blockFacebookBots: z.boolean().default(true),
   // Default Settings
   aiMode: z.boolean().default(true),
-  enableEmergency: z.boolean().default(false),
+  enableEmergency: z.boolean().default(false), 
+  notes: z.string().optional(),
   // Advanced Protections
   randomDelay: z.boolean().default(false),
   ipRotation: z.boolean().default(false),
   cdnInjection: z.boolean().default(false),
   honeypot: z.boolean().default(false),
+}).refine(data => data.fakeUrl.length > 0, {
+    message: "A URL Falsa é obrigatória.",
+    path: ["fakeUrl"],
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+async function isSlugUnique(slug: string, userId: string, currentRouteId?: string): Promise<boolean> {
+    const routesRef = collection(db, "routes");
+    const q = query(routesRef, where("slug", "==", slug), where("userId", "==", userId), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return true; // No routes with this slug for this user
+    }
+
+    // If we are editing, check if the found doc is the same as the one we are editing
+    if (currentRouteId) {
+        return querySnapshot.docs[0].id === currentRouteId;
+    }
+
+    return false; // Found a doc, and we are not in edit mode
+}
+
 
 export function useNewRouteForm(existingRoute?: any) {
   const [isGenerating, setIsGenerating] = React.useState(false);
@@ -60,7 +82,7 @@ export function useNewRouteForm(existingRoute?: any) {
       blockedCountries: [],
       blockFacebookBots: true,
       aiMode: true,
-      enableEmergency: true,
+      enableEmergency: false,
       notes: "",
       randomDelay: false,
       ipRotation: false,
@@ -72,10 +94,12 @@ export function useNewRouteForm(existingRoute?: any) {
   useEffect(() => {
     if (isEditMode && existingRoute) {
       let realUrls;
-      if (existingRoute.smartRotation && Array.isArray(existingRoute.realUrl)) {
+       if (existingRoute.smartRotation && Array.isArray(existingRoute.realUrl)) {
         realUrls = existingRoute.realUrl.map((url: string) => ({ value: url }));
-      } else {
+      } else if (typeof existingRoute.realUrl === 'string') {
         realUrls = [{ value: existingRoute.realUrl }];
+      } else {
+        realUrls = [{ value: "" }];
       }
 
       form.reset({
@@ -139,7 +163,6 @@ export function useNewRouteForm(existingRoute?: any) {
       blockFacebookBots: template.blockFacebookBots,
       aiMode: template.aiMode,
       enableEmergency: template.enableEmergency,
-      // Keep URLs if they exist
       realUrls: currentValues.realUrls[0]?.value ? currentValues.realUrls : [{ value: '' }],
       fakeUrl: currentValues.fakeUrl || '',
     });
@@ -156,39 +179,53 @@ export function useNewRouteForm(existingRoute?: any) {
       toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado para criar uma rota." });
       return;
     }
-
+     
     setIsSubmitting(true);
+
+    if (!isEditMode) {
+        const unique = await isSlugUnique(values.slug, user.uid);
+        if (!unique) {
+            form.setError("slug", { type: "manual", message: "Este slug já está em uso. Por favor, escolha outro." });
+            setIsSubmitting(false);
+            return;
+        }
+    }
     
-    const finalValues = {
+    // Create the base object with properties that are always present
+    const baseValues: any = {
       ...values,
       userId: user.uid,
-      realUrl: values.smartRotation ? values.realUrls.map(url => url.value) : values.realUrls[0].value,
-      // Split textareas into arrays
       blockedIps: values.blockedIps?.split('\n').filter(ip => ip.trim() !== '') || [],
       blockedUserAgents: values.blockedUserAgents?.split('\n').filter(ua => ua.trim() !== '') || [],
     };
     
-    if (!values.smartRotation) {
-        // @ts-ignore
-        delete finalValues.realUrls;
+    // Conditionally set realUrl based on smartRotation
+    if (values.smartRotation) {
+        baseValues.realUrl = values.realUrls.map(url => url.value);
+    } else {
+        baseValues.realUrl = values.realUrls[0].value;
     }
-
+    
+    // Remove the original realUrls array to avoid confusion in Firestore
+    delete baseValues.realUrls;
+    
     try {
         if (isEditMode) {
             const routeRef = doc(db, "routes", existingRoute.id);
-            await updateDoc(routeRef, finalValues);
+            await updateDoc(routeRef, baseValues);
             toast({
                 title: "Rota Atualizada!",
                 description: "Suas alterações foram salvas com sucesso.",
             });
         } else {
-            await addDoc(collection(db, "routes"), { ...finalValues, createdAt: new Date() });
+            await addDoc(collection(db, "routes"), { ...baseValues, createdAt: new Date() });
             toast({
                 title: "Rota Criada!",
                 description: "Sua nova rota foi salva e está pronta para uso.",
             });
         }
         router.push("/dashboard");
+        router.refresh();
     } catch (error) {
       console.error("Error saving route: ", error);
       toast({
