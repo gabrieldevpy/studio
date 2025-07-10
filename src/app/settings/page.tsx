@@ -181,6 +181,13 @@ function SettingsPage() {
     }
   };
 
+  const handleContactUs = () => {
+    toast({
+        title: "Contato",
+        description: "Em um aplicativo real, isso abriria um chat ou formulário de contato.",
+    });
+  }
+
   const currentPlanDetails = plans.find(p => p.isCurrent);
   
   if (userLoading || plans.length === 0) {
@@ -208,7 +215,7 @@ function SettingsPage() {
       routesUsed: userData?.routesUsed || 0, // This should come from an aggregation
       clicksUsed: userData?.clicksUsed || 0, // This should come from an aggregation
       nextBillingDate: "2024-08-20"
-  };
+  }
 
   return (
     <DashboardLayout>
@@ -259,7 +266,7 @@ function SettingsPage() {
                 </p>
             </CardContent>
              <CardFooter>
-                <Button variant="secondary" disabled>Fale Conosco</Button>
+                <Button variant="secondary" onClick={handleContactUs}>Fale Conosco</Button>
             </CardFooter>
         </Card>
       </div>
@@ -313,7 +320,7 @@ function SettingsPage() {
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação cancelará sua assinatura paga e mudará seu plano para o "Iniciante" ao final do ciclo de faturamento atual. Você pode perder o acesso aos recursos do plano Pro.
-            </AlertDialogDescription>
+            </dAlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
