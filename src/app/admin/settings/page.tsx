@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Settings, Tool, AlertTriangle, Loader2 } from "lucide-react";
+import { Settings, Wrench, AlertTriangle, Loader2 } from "lucide-react";
 import withAuth from "@/components/with-auth";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -39,7 +39,7 @@ function AdminSettingsPage() {
             <div className="grid gap-6 max-w-2xl">
                 <Card>
                     <CardHeader>
-                        <CardTitle className='flex items-center gap-2'><Tool /> Ferramentas de Administração</CardTitle>
+                        <CardTitle className='flex items-center gap-2'><Wrench /> Ferramentas de Administração</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6">
                         <div className="flex items-center justify-between rounded-lg border p-4">
