@@ -33,10 +33,18 @@ const onSnapshot = (collection: any, callback: (snapshot: any) => void) => {
         timestamp: new Date(),
         redirectedTo: Math.random() > 0.5 ? 'real' : 'fake' as const,
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
-    }
-    const snapshot = {
-      docs: [newLog, ...mockLogs.map(l => ({ id: l.id, data: () => l }))].sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime()).map(d => ({id: d.id, data: () => ({...d, timestamp: { toDate: () => d.timestamp}})}))
     };
+    
+    const combinedLogs = [newLog, ...mockLogs.map(l => ({...l}))];
+    const sortedDocs = combinedLogs
+        .sort((a,b) => b.timestamp.getTime() - a.timestamp.getTime())
+        .map(d => ({id: d.id, data: () => ({...d, timestamp: { toDate: () => d.timestamp}})})
+    );
+    
+    const snapshot = {
+      docs: sortedDocs
+    };
+
     callback(snapshot);
   }, 5000);
 
@@ -95,7 +103,7 @@ export default function LiveFeedPage() {
           const log = {
             id: doc.id,
             ...data,
-            timestamp: data.timestamp && data.timestamp.toDate ? data.timestamp.toDate() : new Date(),
+            timestamp: (data.timestamp && data.timestamp.toDate) ? data.timestamp.toDate() : new Date(),
           } as LogEntry;
           
           const isExisting = currentLogs.some(l => l.id === log.id);
