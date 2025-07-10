@@ -4,7 +4,6 @@
 import { AdminLayout } from "@/components/admin-layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PlusCircle, ShieldCheck } from "lucide-react";
@@ -17,7 +16,7 @@ const plans = [
     { id: 'pro', name: 'Empresarial', price: 199, routeLimit: Infinity, features: 'Rotas Ilimitadas, Cliques Ilimitados, API', active: true },
 ];
 
-export default function AdminPlansPage() {
+function AdminPlansPage() {
     return (
         <AdminLayout>
             <div className="flex justify-between items-center mb-6">
@@ -70,3 +69,5 @@ export default function AdminPlansPage() {
         </AdminLayout>
     );
 }
+
+export default withAuth(AdminPlansPage);

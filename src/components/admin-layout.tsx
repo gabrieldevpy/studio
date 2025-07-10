@@ -2,8 +2,8 @@
 "use client"
 import Link from "next/link"
 import React from "react"
-import { usePathname } from "next/navigation"
-import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2 } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -17,10 +17,37 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar"
 import { Logo } from "./icons"
+import { useUserData } from "@/hooks/use-user-data"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter();
+  const { userData, loading: userLoading } = useUserData();
   const isActive = (path: string) => pathname === path
+
+  if (userLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!userData?.admin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background p-4">
+        <Alert variant="destructive" className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acesso Negado</AlertTitle>
+          <AlertDescription>
+            Você não tem permissão para visualizar esta página. Por favor, faça login com uma conta de administrador.
+            <Link href="/login" className="font-bold underline ml-2">Ir para o Login</Link>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   
   return (
     <SidebarProvider>
@@ -58,6 +85,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                  <Link href="/admin/settings"><Settings /><span>Configurações</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+                <SidebarMenuButton href="/dashboard" asChild tooltip="Voltar ao App">
+                    <Link href="/dashboard"><LayoutDashboard /><span>Voltar ao App</span></Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>

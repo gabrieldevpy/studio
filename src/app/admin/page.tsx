@@ -8,12 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { AdminLayout } from "@/components/admin-layout";
 import withAuth from "@/components/with-auth";
 import { Users, BarChart, FileText } from "lucide-react";
-import { useUserData } from "@/hooks/use-user-data";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertCircle } from "lucide-react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 
@@ -40,26 +37,13 @@ type AdminData = {
 }
 
 function AdminPage() {
-  const { userData, loading: userLoading } = useUserData();
   const [authUser, authLoading] = useAuthState(auth);
   const router = useRouter();
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!userLoading) {
-      if (userData?.admin) {
-        setIsAuthorized(true);
-      } else {
-        setIsAuthorized(false);
-        setLoading(false);
-      }
-    }
-  }, [userData, userLoading, router]);
-
-  useEffect(() => {
-    if (isAuthorized && authUser) {
+    if (authUser) {
       const fetchAdminData = async () => {
         setLoading(true);
         try {
@@ -71,6 +55,12 @@ function AdminPage() {
           });
 
           if (!response.ok) {
+            // The layout will handle the visual "Access Denied" part
+            // We can just stop loading here.
+            if (response.status === 403) {
+              setLoading(false);
+              return;
+            }
             throw new Error('Failed to fetch admin data');
           }
           const data: AdminData = await response.json();
@@ -93,114 +83,108 @@ function AdminPage() {
       };
       fetchAdminData();
     }
-  }, [isAuthorized, authUser]);
+  }, [authUser]);
 
-  if (userLoading || authLoading || loading || isAuthorized === null) {
-     return (
-        <AdminLayout>
-             <div className="flex items-center mb-6">
-                <h1 className="text-3xl font-bold">Painel do Administrador</h1>
-             </div>
-             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-                <Skeleton className="h-28" />
-             </div>
-             <Skeleton className="h-96" />
-        </AdminLayout>
-     )
-  }
+  const PageContent = () => {
+    if (authLoading || loading) {
+       return (
+          <>
+               <div className="flex items-center mb-6">
+                  <h1 className="text-3xl font-bold">Painel do Administrador</h1>
+               </div>
+               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+                  <Skeleton className="h-28" />
+                  <Skeleton className="h-28" />
+                  <Skeleton className="h-28" />
+               </div>
+               <Skeleton className="h-96" />
+          </>
+       )
+    }
 
-  if (!isAuthorized) {
     return (
-      <AdminLayout>
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Acesso Negado</AlertTitle>
-          <AlertDescription>
-            Você não tem permissão para visualizar esta página.
-          </AlertDescription>
-        </Alert>
-      </AdminLayout>
+      <>
+        <div className="flex items-center mb-6">
+          <h1 className="text-3xl font-bold">Painel do Administrador</h1>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{adminData?.stats?.totalUsers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Assinaturas Ativas</CardTitle>
+              <BarChart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{(adminData?.stats?.proPlans || 0) + (adminData?.stats?.basicPlans || 0)}</div>
+              <p className="text-xs text-muted-foreground">Pro: {adminData?.stats?.proPlans || 0}, Basic: {adminData?.stats?.basicPlans || 0}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Rotas Criadas</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{adminData?.stats?.totalRoutes}</div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Usuários Recentes</CardTitle>
+            <CardDescription>
+              Lista dos últimos usuários que se cadastraram.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Plano</TableHead>
+                  <TableHead>Data de Cadastro</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {adminData?.recentUsers?.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge variant={user.plan === 'Pro' ? 'default' : user.plan === 'Basic' ? 'secondary' : 'outline'}>
+                        {user.plan}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{user.createdAt?.toLocaleDateString('pt-BR')}</TableCell>
+                  </TableRow>
+                ))}
+                 {(adminData?.recentUsers?.length === 0) && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </>
     );
   }
 
   return (
     <AdminLayout>
-      <div className="flex items-center mb-6">
-        <h1 className="text-3xl font-bold">Painel do Administrador</h1>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Usuários</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{adminData?.stats?.totalUsers}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assinaturas Ativas</CardTitle>
-            <BarChart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{(adminData?.stats?.proPlans || 0) + (adminData?.stats?.basicPlans || 0)}</div>
-            <p className="text-xs text-muted-foreground">Pro: {adminData?.stats?.proPlans || 0}, Basic: {adminData?.stats?.basicPlans || 0}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Rotas Criadas</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{adminData?.stats?.totalRoutes}</div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <Card>
-        <CardHeader>
-          <CardTitle>Usuários Recentes</CardTitle>
-          <CardDescription>
-            Lista dos últimos usuários que se cadastraram.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Plano</TableHead>
-                <TableHead>Data de Cadastro</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {adminData?.recentUsers?.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge variant={user.plan === 'Pro' ? 'default' : user.plan === 'Basic' ? 'secondary' : 'outline'}>
-                      {user.plan}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{user.createdAt?.toLocaleDateString('pt-BR')}</TableCell>
-                </TableRow>
-              ))}
-               {(adminData?.recentUsers?.length === 0) && (
-                <TableRow>
-                  <TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <PageContent />
     </AdminLayout>
   );
 }

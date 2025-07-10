@@ -7,11 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Settings, ExternalLink, Bell, CreditCard } from "lucide-react";
 import withAuth from "@/components/with-auth";
 
-export default function AdminSettingsPage() {
+function AdminSettingsPage() {
     return (
         <AdminLayout>
             <div className="flex items-center mb-6">
@@ -84,3 +83,5 @@ export default function AdminSettingsPage() {
         </AdminLayout>
     );
 }
+
+export default withAuth(AdminSettingsPage);

@@ -16,7 +16,7 @@ const analyticsData = {
     newUsersToday: 5,
 };
 
-export default function AdminAnalyticsPage() {
+function AdminAnalyticsPage() {
     return (
         <AdminLayout>
             <div className="flex items-center mb-6">
@@ -82,3 +82,5 @@ export default function AdminAnalyticsPage() {
         </AdminLayout>
     );
 }
+
+export default withAuth(AdminAnalyticsPage);
