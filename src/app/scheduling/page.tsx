@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,31 +55,75 @@ const dayMappings = [
     { value: 'dom', label: 'D' },
 ];
 
+const emptyRule = {
+    routeName: '',
+    days: [] as string[],
+    startTime: '',
+    endTime: '',
+    action: 'force_fake' as 'force_fake' | 'force_real',
+    priority: false,
+};
+
 export default function SchedulingPage() {
     const [rules, setRules] = useState<TimeRule[]>(initialRules);
     const [isAdding, setIsAdding] = useState(false);
     const [ruleToDelete, setRuleToDelete] = useState<TimeRule | null>(null);
+    const [ruleToEdit, setRuleToEdit] = useState<TimeRule | null>(null);
 
     // State for the form fields
-    const [newRule, setNewRule] = useState({
-        routeName: '',
-        days: [] as string[],
-        startTime: '',
-        endTime: '',
-        action: 'force_fake' as 'force_fake' | 'force_real',
-        priority: false,
-    });
+    const [currentRule, setCurrentRule] = useState<Omit<TimeRule, 'id'>>(emptyRule);
+
+    useEffect(() => {
+        if (ruleToEdit) {
+            setCurrentRule(ruleToEdit);
+        } else {
+            setCurrentRule(emptyRule);
+        }
+    }, [ruleToEdit]);
+
+    const handleFormValueChange = (field: keyof typeof currentRule, value: any) => {
+        setCurrentRule(prev => ({...prev, [field]: value}));
+    };
+    
+    const openAddForm = () => {
+        setRuleToEdit(null);
+        setCurrentRule(emptyRule);
+        setIsAdding(true);
+    }
+    
+    const openEditForm = (rule: TimeRule) => {
+        setIsAdding(false);
+        setRuleToEdit(rule);
+        setCurrentRule(rule);
+    }
+
+    const closeForm = () => {
+        setIsAdding(false);
+        setRuleToEdit(null);
+        setCurrentRule(emptyRule);
+    }
 
     const handleSaveRule = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const ruleToAdd = { ...newRule, id: uuidv4() };
-        setRules(prev => [...prev, ruleToAdd]);
-        toast({
-            title: "Regra Salva!",
-            description: "Sua nova regra de agendamento foi salva com sucesso.",
-        });
-        setIsAdding(false);
-        setNewRule({ routeName: '', days: [], startTime: '', endTime: '', action: 'force_fake', priority: false }); // Reset form
+        
+        if (ruleToEdit) {
+            // Update existing rule
+            setRules(prev => prev.map(r => r.id === ruleToEdit.id ? { ...currentRule, id: r.id } : r));
+            toast({
+                title: "Regra Atualizada!",
+                description: "Sua regra de agendamento foi atualizada com sucesso.",
+            });
+        } else {
+            // Add new rule
+            const ruleToAdd = { ...currentRule, id: uuidv4() };
+            setRules(prev => [...prev, ruleToAdd]);
+            toast({
+                title: "Regra Salva!",
+                description: "Sua nova regra de agendamento foi salva com sucesso.",
+            });
+        }
+        
+        closeForm();
     };
     
     const handleDeleteRule = () => {
@@ -93,9 +137,7 @@ export default function SchedulingPage() {
         }
     };
     
-    // Install uuid and its types if not already present
-    // npm install uuid
-    // npm install --save-dev @types/uuid
+    const isFormOpen = isAdding || !!ruleToEdit;
 
     return (
         <DashboardLayout>
@@ -111,6 +153,11 @@ export default function SchedulingPage() {
                             <CardDescription>Gerencie as regras de automação baseadas em horário para suas rotas.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            {rules.length === 0 && !isFormOpen && (
+                                <div className="text-center py-10 text-muted-foreground">
+                                    <p>Nenhuma regra de horário criada ainda.</p>
+                                </div>
+                            )}
                             {rules.map(rule => (
                                 <div key={rule.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg gap-4">
                                     <div className="flex-1">
@@ -124,13 +171,13 @@ export default function SchedulingPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 self-start md:self-center">
-                                        <Button variant="ghost" size="icon" disabled><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" onClick={() => openEditForm(rule)}><Edit className="h-4 w-4" /></Button>
                                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setRuleToDelete(rule)}><Trash2 className="h-4 w-4" /></Button>
                                     </div>
                                 </div>
                             ))}
-                             {!isAdding && (
-                                <Button onClick={() => setIsAdding(true)} variant="outline" className="w-full mt-4">
+                             {!isFormOpen && (
+                                <Button onClick={openAddForm} variant="outline" className="w-full mt-4">
                                     <PlusCircle className="mr-2 h-4 w-4" />
                                     Adicionar Nova Regra de Horário
                                 </Button>
@@ -140,17 +187,17 @@ export default function SchedulingPage() {
                 </div>
 
                 <div className="lg:col-span-1">
-                     {isAdding ? (
+                     {isFormOpen ? (
                         <Card>
                             <CardHeader>
-                                <CardTitle>Nova Regra de Horário</CardTitle>
+                                <CardTitle>{ruleToEdit ? 'Editar Regra' : 'Nova Regra de Horário'}</CardTitle>
                                 <CardDescription>Defina quando e como a regra será aplicada.</CardDescription>
                             </CardHeader>
                             <form onSubmit={handleSaveRule}>
                                 <CardContent className="space-y-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="route">Rota</Label>
-                                        <Select required onValueChange={(value) => setNewRule(prev => ({...prev, routeName: value}))} value={newRule.routeName}>
+                                        <Select required onValueChange={(value) => handleFormValueChange('routeName', value)} value={currentRule.routeName}>
                                             <SelectTrigger id="route">
                                                 <SelectValue placeholder="Selecione a rota" />
                                             </SelectTrigger>
@@ -161,23 +208,23 @@ export default function SchedulingPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Dias da Semana</Label>
-                                        <ToggleGroup type="multiple" variant="outline" className="justify-start flex-wrap" onValueChange={(value) => setNewRule(prev => ({...prev, days: value}))} value={newRule.days}>
+                                        <ToggleGroup type="multiple" variant="outline" className="justify-start flex-wrap" onValueChange={(value) => handleFormValueChange('days', value)} value={currentRule.days}>
                                             {dayMappings.map(day => <ToggleGroupItem key={day.value} value={day.value}>{day.label}</ToggleGroupItem>)}
                                         </ToggleGroup>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="start-time">Início</Label>
-                                            <Input id="start-time" type="time" required value={newRule.startTime} onChange={(e) => setNewRule(prev => ({...prev, startTime: e.target.value}))}/>
+                                            <Input id="start-time" type="time" required value={currentRule.startTime} onChange={(e) => handleFormValueChange('startTime', e.target.value)}/>
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="end-time">Fim</Label>
-                                            <Input id="end-time" type="time" required value={newRule.endTime} onChange={(e) => setNewRule(prev => ({...prev, endTime: e.target.value}))} />
+                                            <Input id="end-time" type="time" required value={currentRule.endTime} onChange={(e) => handleFormValueChange('endTime', e.target.value)} />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="action">Ação</Label>
-                                        <Select required onValueChange={(value: 'force_fake' | 'force_real') => setNewRule(prev => ({...prev, action: value}))} value={newRule.action}>
+                                        <Select required onValueChange={(value: 'force_fake' | 'force_real') => handleFormValueChange('action', value)} value={currentRule.action}>
                                             <SelectTrigger id="action">
                                                 <SelectValue placeholder="Selecione a ação" />
                                             </SelectTrigger>
@@ -192,11 +239,11 @@ export default function SchedulingPage() {
                                             <Label>Prioridade Alta</Label>
                                             <p className="text-xs text-muted-foreground">Sobrepõe outras regras de filtragem.</p>
                                         </div>
-                                        <Switch checked={newRule.priority} onCheckedChange={(checked) => setNewRule(prev => ({...prev, priority: checked}))}/>
+                                        <Switch checked={currentRule.priority} onCheckedChange={(checked) => handleFormValueChange('priority', checked)}/>
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex justify-end gap-2">
-                                    <Button variant="ghost" onClick={() => setIsAdding(false)} type="button">Cancelar</Button>
+                                    <Button variant="ghost" onClick={closeForm} type="button">Cancelar</Button>
                                     <Button type="submit">Salvar Regra</Button>
                                 </CardFooter>
                             </form>
@@ -234,3 +281,4 @@ export default function SchedulingPage() {
             </AlertDialog>
         </DashboardLayout>
     );
+}
