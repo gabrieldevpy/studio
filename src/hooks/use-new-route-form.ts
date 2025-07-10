@@ -18,10 +18,8 @@ const formSchema = z.object({
   slug: z.string().min(3, "O slug deve ter pelo menos 3 caracteres.").regex(/^[a-zA-Z0-9_-]+$/, "O slug pode conter apenas letras, números, hífens e sublinhados."),
   realUrls: z.array(z.object({ value: z.string().url("Por favor, insira uma URL válida.") })).min(1, "É necessária pelo menos uma URL real."),
   fakeUrl: z.string().url("Por favor, insira uma URL válida.").or(z.literal('')),
-  notes: z.string().optional(),
   // Standard Settings
   smartRotation: z.boolean().default(false),
-  rotationMode: z.enum(['sequential', 'random']).default('sequential'),
   blockedIps: z.string().optional(),
   blockedUserAgents: z.string().optional(),
   allowedCountries: z.array(z.string()).optional(),
@@ -75,7 +73,6 @@ export function useNewRouteForm(existingRoute?: any) {
       realUrls: [{ value: "" }],
       fakeUrl: "",
       smartRotation: false,
-      rotationMode: 'sequential',
       blockedIps: "",
       blockedUserAgents: "",
       allowedCountries: [],
@@ -107,7 +104,6 @@ export function useNewRouteForm(existingRoute?: any) {
         realUrls: realUrls,
         fakeUrl: existingRoute.fakeUrl || "",
         smartRotation: existingRoute.smartRotation || false,
-        rotationMode: existingRoute.rotationMode || 'sequential',
         blockedIps: Array.isArray(existingRoute.blockedIps) ? existingRoute.blockedIps.join('\n') : "",
         blockedUserAgents: Array.isArray(existingRoute.blockedUserAgents) ? existingRoute.blockedUserAgents.join('\n') : "",
         allowedCountries: existingRoute.allowedCountries || [],
@@ -182,8 +178,8 @@ export function useNewRouteForm(existingRoute?: any) {
      
     setIsSubmitting(true);
 
-    if (!isEditMode) {
-        const unique = await isSlugUnique(values.slug, user.uid);
+    if (!isEditMode || (isEditMode && values.slug !== existingRoute.slug)) {
+        const unique = await isSlugUnique(values.slug, user.uid, isEditMode ? existingRoute.id : undefined);
         if (!unique) {
             form.setError("slug", { type: "manual", message: "Este slug já está em uso. Por favor, escolha outro." });
             setIsSubmitting(false);
