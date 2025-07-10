@@ -2,7 +2,7 @@
 import Link from "next/link"
 import React, { useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
-import { Home, Plus, Book, User, Settings, LogOut, ChevronDown } from "lucide-react"
+import { Home, Plus, Book, Settings, Server, Activity } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -15,19 +15,12 @@ import {
   SidebarTrigger,
   SidebarInset,
 } from "@/components/ui/sidebar"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Logo } from "./icons"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isActive = (path: string) => pathname === path
-  const [isMounted, setIsMounted] = useState(false)
-
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
+  
   return (
     <SidebarProvider>
       <Sidebar>
@@ -49,9 +42,24 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <Link href="/routes/new"><Plus /><span>Nova Rota</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton href="#" asChild tooltip="Live Feed">
+                 <Link href="#"><Activity /><span>Live Feed</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton href="#" asChild tooltip="Proxies">
+                 <Link href="#"><Server /><span>Proxies</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton href="#" asChild tooltip="Documentação" >
                  <Link href="#"><Book /><span>Documentação</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton href="#" asChild tooltip="Configurações">
+                 <Link href="#"><Settings /><span>Configurações</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
