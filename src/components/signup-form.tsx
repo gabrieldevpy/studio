@@ -37,7 +37,7 @@ export function SignupForm() {
         email: email,
         createdAt: new Date(),
         plan: "Iniciante", // Plano padrão
-        admin: false // Nenhum usuário é admin por padrão
+        admin: email.toLowerCase() === "gsommer782@gmail.com"
       });
 
       toast({
