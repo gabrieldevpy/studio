@@ -320,7 +320,7 @@ function SettingsPage() {
             <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação cancelará sua assinatura paga e mudará seu plano para o "Iniciante" ao final do ciclo de faturamento atual. Você pode perder o acesso aos recursos do plano Pro.
-            </dAlertDialogDescription>
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Voltar</AlertDialogCancel>
