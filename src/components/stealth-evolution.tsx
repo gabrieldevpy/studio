@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Lightbulb, ShieldPlus, ShieldOff, Copy } from "lucide-react";
+import { Lightbulb, ShieldPlus, ShieldOff } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MOCK_LOGS } from "@/lib/mock-logs";
@@ -11,14 +11,15 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
 type Suggestion = {
-  type: "ip" | "userAgent";
+  type: "ip";
   value: string;
   reason: string;
   count: number;
+  slug: string;
 };
 
 type StealthEvolutionProps = {
-    onBlockIp: (ip: string) => void;
+    onBlockIp: (ip: string, slug: string) => void;
 }
 
 const SUSPICIOUS_IP_THRESHOLD = 3;
@@ -30,25 +31,27 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
   const suggestions = useMemo(() => {
     if (!aiEnabled) return [];
 
-    const ipCounts: Record<string, number> = {};
+    const ipCounts: Record<string, { count: number; slug: string }> = {};
     
-    // Analyze logs to find suspicious patterns
     MOCK_LOGS.forEach(log => {
       if (log.redirectedTo === "fake") {
-        ipCounts[log.ip] = (ipCounts[log.ip] || 0) + 1;
+        if (!ipCounts[log.ip]) {
+          ipCounts[log.ip] = { count: 0, slug: log.slug };
+        }
+        ipCounts[log.ip].count++;
       }
     });
 
     const newSuggestions: Suggestion[] = [];
 
-    // Create suggestions for IPs
     for (const ip in ipCounts) {
-      if (ipCounts[ip] >= SUSPICIOUS_IP_THRESHOLD) {
+      if (ipCounts[ip].count >= SUSPICIOUS_IP_THRESHOLD) {
         newSuggestions.push({
           type: "ip",
           value: ip,
-          count: ipCounts[ip],
-          reason: `Detectado ${ipCounts[ip]} vezes em tráfego suspeito.`
+          count: ipCounts[ip].count,
+          slug: ipCounts[ip].slug,
+          reason: `Detectado ${ipCounts[ip].count} vezes na rota /${ipCounts[ip].slug}.`
         });
       }
     }
@@ -58,10 +61,9 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
 
   const activeSuggestions = suggestions.filter(s => !ignoredSuggestions.includes(s.value));
   
-  const handleBlock = (value: string) => {
-    onBlockIp(value);
-    // Also ignore the suggestion after blocking
-    setIgnoredSuggestions(prev => [...prev, value]);
+  const handleBlock = (suggestion: Suggestion) => {
+    onBlockIp(suggestion.value, suggestion.slug);
+    setIgnoredSuggestions(prev => [...prev, suggestion.value]);
   }
   
   const handleIgnore = (value: string) => {
@@ -116,7 +118,7 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" className="w-full" onClick={() => handleBlock(suggestion.value)}>
+                  <Button size="sm" className="w-full" onClick={() => handleBlock(suggestion)}>
                     <ShieldPlus className="mr-2 h-4 w-4" />
                     Bloquear IP
                   </Button>
