@@ -3,6 +3,7 @@
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import withAuth from "@/components/with-auth";
 import dynamic from 'next/dynamic';
 
 const WebhookClientContent = dynamic(() => import('@/components/webhook-client-content'), { 
@@ -22,7 +23,7 @@ const WebhookClientContent = dynamic(() => import('@/components/webhook-client-c
   )
 });
 
-export default function WebhooksPage() {
+function WebhooksPage() {
     return (
         <DashboardLayout>
             <div className="flex items-center mb-6">
@@ -32,3 +33,5 @@ export default function WebhooksPage() {
         </DashboardLayout>
     );
 }
+
+export default withAuth(WebhooksPage);

@@ -1,7 +1,7 @@
 
 "use client"
 import Link from "next/link"
-import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon } from "lucide-react"
+import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon, LogOut } from "lucide-react"
 import React from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import {
   Table,
@@ -45,6 +46,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { StealthEvolution } from "@/components/stealth-evolution";
+import withAuth from "@/components/with-auth";
+import { auth } from "@/lib/firebase";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { useRouter } from "next/navigation";
 
 type Route = {
   id: string;
@@ -77,10 +82,17 @@ const COLORS = {
   Suspeito: '#ef4444',
 };
 
-export default function DashboardPage() {
+function DashboardPage() {
   const [routes, setRoutes] = React.useState(initialMockRoutes);
   const [routeToDelete, setRouteToDelete] = React.useState<Route | null>(null);
   const [timeRange, setTimeRange] = React.useState<keyof typeof analyticsData>("7d")
+  const [user, loading] = useAuthState(auth);
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/login');
+  };
 
   const handleToggleChange = (id: string, field: 'emergency' | 'aiMode', checked: boolean) => {
     const updatedRoutes = routes.map(route =>
@@ -128,13 +140,18 @@ export default function DashboardPage() {
       <div className="flex items-center mb-6" id="tour-step-1">
         <div className="flex-1">
           <h1 className="text-3xl font-bold">Painel</h1>
-          <p className="text-muted-foreground">Uma visão geral de suas rotas com cloaking.</p>
+          <p className="text-muted-foreground">Bem-vindo, {user?.email || 'usuário'}!</p>
         </div>
-        <Button asChild id="tour-step-2">
-          <Link href="/routes/new">
-            <Plus className="mr-2 h-4 w-4" /> Criar Nova Rota
-          </Link>
-        </Button>
+        <div className="flex items-center gap-4">
+            <Button asChild id="tour-step-2">
+            <Link href="/routes/new">
+                <Plus className="mr-2 h-4 w-4" /> Criar Nova Rota
+            </Link>
+            </Button>
+            <Button variant="outline" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" /> Sair
+            </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
@@ -267,6 +284,7 @@ export default function DashboardPage() {
                             <DropdownMenuLabel>Ações</DropdownMenuLabel>
                             <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/logs`}>Ver Logs</Link></DropdownMenuItem>
                             <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/edit`}>Editar</Link></DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onSelect={() => setRouteToDelete(route)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
                               Excluir
                             </DropdownMenuItem>
@@ -305,3 +323,5 @@ export default function DashboardPage() {
     </DashboardLayout>
   )
 }
+
+export default withAuth(DashboardPage);

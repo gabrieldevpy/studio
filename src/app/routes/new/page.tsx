@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
+import withAuth from "@/components/with-auth";
 
 // Dynamically import the form component with SSR disabled
 const NewRouteForm = dynamic(() => import('@/components/new-route-form').then(mod => mod.NewRouteForm), {
@@ -30,7 +31,7 @@ const NewRouteForm = dynamic(() => import('@/components/new-route-form').then(mo
   ),
 });
 
-export default function NewRoutePage() {
+function NewRoutePage() {
   return (
     <DashboardLayout>
       <div className="flex items-center gap-4 mb-6">
@@ -48,3 +49,5 @@ export default function NewRoutePage() {
     </DashboardLayout>
   );
 }
+
+export default withAuth(NewRoutePage);

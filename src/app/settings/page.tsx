@@ -1,10 +1,12 @@
+
 "use client";
 
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import withAuth from "@/components/with-auth";
 import { Settings } from "lucide-react";
 
-export default function SettingsPage() {
+function SettingsPage() {
   return (
     <DashboardLayout>
        <div className="flex items-center mb-6">
@@ -27,3 +29,5 @@ export default function SettingsPage() {
     </DashboardLayout>
   );
 }
+
+export default withAuth(SettingsPage);

@@ -1,3 +1,4 @@
+
 "use client"
 import Link from "next/link"
 import React from "react"
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { DashboardLayout } from "@/components/dashboard-layout"
+import withAuth from "@/components/with-auth"
 
 const mockLogs = [
   { id: '1', ip: '123.45.67.89', country: 'Estados Unidos', dateTime: '2024-07-29 10:00:00 UTC', redirectedTo: 'real' as const, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36' },
@@ -39,7 +41,7 @@ const getDeviceInfo = (userAgent: string) => {
   return { browser: browserName, os: osName };
 }
 
-export default function LogsPage({ params }: { params: { slug: string } }) {
+function LogsPage({ params }: { params: { slug: string } }) {
   const [search, setSearch] = React.useState("")
   const routeParams = React.use(params)
 
@@ -123,3 +125,5 @@ export default function LogsPage({ params }: { params: { slug: string } }) {
     </DashboardLayout>
   )
 }
+
+export default withAuth(LogsPage);

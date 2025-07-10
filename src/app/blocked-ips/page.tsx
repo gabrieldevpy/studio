@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "@/hooks/use-toast"
+import withAuth from "@/components/with-auth"
 
 type BlockedIp = {
   id: string
@@ -44,7 +45,7 @@ const initialMockBlockedIps: BlockedIp[] = [
   { id: '4', ip: '208.67.222.222', routeSlug: 'lander-v2', source: 'manual', createdAt: '2024-07-29 18:01:50 UTC' },
 ]
 
-export default function BlockedIpsPage() {
+function BlockedIpsPage() {
   const [blockedIps, setBlockedIps] = React.useState(initialMockBlockedIps)
   const [ipToUnblock, setIpToUnblock] = React.useState<BlockedIp | null>(null)
 
@@ -152,3 +153,5 @@ export default function BlockedIpsPage() {
     </DashboardLayout>
   )
 }
+
+export default withAuth(BlockedIpsPage);

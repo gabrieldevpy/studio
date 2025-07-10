@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { v4 as uuidv4 } from 'uuid';
+import withAuth from '@/components/with-auth';
 
 type TimeRule = {
   id: string;
@@ -64,7 +65,7 @@ const emptyRule = {
     priority: false,
 };
 
-export default function SchedulingPage() {
+function SchedulingPage() {
     const [rules, setRules] = useState<TimeRule[]>(initialRules);
     const [isAdding, setIsAdding] = useState(false);
     const [ruleToDelete, setRuleToDelete] = useState<TimeRule | null>(null);
@@ -282,3 +283,5 @@ export default function SchedulingPage() {
         </DashboardLayout>
     );
 }
+
+export default withAuth(SchedulingPage);

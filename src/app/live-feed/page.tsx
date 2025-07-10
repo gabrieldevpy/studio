@@ -12,6 +12,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import withAuth from "@/components/with-auth";
 
 // Mock Firestore onSnapshot
 const onSnapshot = (collection: any, callback: (snapshot: any) => void) => {
@@ -87,7 +88,7 @@ const getFlagEmoji = (countryCode: string) => {
   return String.fromCodePoint(...codePoints);
 }
 
-export default function LiveFeedPage() {
+function LiveFeedPage() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -199,3 +200,5 @@ export default function LiveFeedPage() {
     </DashboardLayout>
   );
 }
+
+export default withAuth(LiveFeedPage);
