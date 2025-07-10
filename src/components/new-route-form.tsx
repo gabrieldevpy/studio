@@ -3,7 +3,7 @@
 
 import React from "react";
 import { FormProvider, useFieldArray } from "react-hook-form";
-import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw, BrainCircuit } from "lucide-react";
+import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw, BrainCircuit, ShieldAlert, Timer, Cloud, MousePointerClick } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -235,7 +235,7 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                       <div className="space-y-0.5">
                         <FormLabel className="text-base">Bloquear Bots do Facebook</FormLabel>
                         <FormDescription>
-                          Redireciona automaticamente os rastreadores do Facebook (facebookexternalhit, Facebot) para a URL falsa.
+                          Redireciona automaticamente os rastreadores do Facebook para a URL falsa.
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -364,10 +364,10 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle>Configurações Avançadas</CardTitle>
+                <CardTitle>Configurações Padrão</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
+              <CardContent className="space-y-1">
+                 <FormField
                   control={form.control}
                   name="aiMode"
                   render={({ field }) => (
@@ -378,7 +378,7 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                           Modo IA
                         </FormLabel>
                         <FormDescription>
-                          Permitir que a IA aprenda e sugira novas regras de bloqueio.
+                          Permitir que a IA aprenda e sugira novas regras.
                         </FormDescription>
                       </div>
                       <FormControl>
@@ -398,7 +398,7 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                       <div className="space-y-0.5">
                         <FormLabel className="text-base">Botão de Emergência</FormLabel>
                         <FormDescription>
-                          Ative para forçar todo o tráfego para a URL falsa com um clique.
+                          Habilitar botão para forçar a URL falsa.
                         </FormDescription>
                       </div>
                        <FormControl>
@@ -407,6 +407,76 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Proteções Avançadas</CardTitle>
+                 <CardDescription>
+                  Adicione camadas extras de segurança para enganar bots sofisticados.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                 <FormField
+                  control={form.control}
+                  name="ipRotation"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><RotateCw className="h-4 w-4 text-primary"/>IP Rotation Redirect</FormLabel>
+                        <FormDescription>
+                          Redireciona IPs com acessos muito rápidos. Requer cache.
+                        </FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="randomDelay"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Timer className="h-4 w-4 text-primary"/>Delay Aleatório</FormLabel>
+                        <FormDescription>
+                           Aplica um atraso de 600-2200ms antes de redirecionar.
+                        </FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="cdnInjection"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Cloud className="h-4 w-4 text-primary"/>CDN-Injection Fake</FormLabel>
+                        <FormDescription>
+                          Instrução para sua página real simular carregamento via CDN.
+                        </FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="honeypot"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><MousePointerClick className="h-4 w-4 text-primary"/>Honeypot Invisível</FormLabel>
+                        <FormDescription>
+                          Instrução para sua página real conter uma "armadilha" para bots.
+                        </FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
                     </FormItem>
                   )}
                 />

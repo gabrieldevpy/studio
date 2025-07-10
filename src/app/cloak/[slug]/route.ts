@@ -35,22 +35,31 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
   let decision = 'real' as 'real' | 'fake';
   let blockReason = '';
 
-  // --- Start of Decision Logic ---
-
-  // 1. Emergency mode has highest priority
-  if (config.emergency) {
-    blockReason = 'Emergency mode';
-  }
-
   const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
   const country = request.geo?.country || 'unknown';
   const referer = request.headers.get('referer');
-  const asn = request.ipLocation?.asn;
+  
+  // --- Start of Decision Logic ---
+
+  // 1. IP Rotation Redirect (Requires Redis or similar for stateful tracking)
+  if (config.ipRotation) {
+    // PSEUDO-CODE: This logic would need a stateful cache like Redis.
+    // const ipAccessCount = await redis.incr(`ip_count:${slug}:${ip}`);
+    // await redis.expire(`ip_count:${slug}:${ip}`, 60); // 60-second window
+    // if (ipAccessCount > 10) { // Example: more than 10 requests in 60s
+    //   blockReason = `IP Rate Limit Exceeded: ${ip}`;
+    // }
+  }
+  
+  // 2. Emergency mode has highest priority
+  if (!blockReason && config.emergency) {
+    blockReason = 'Emergency mode';
+  }
 
   const userAgentLower = userAgent.toLowerCase();
   
-  // 2. Heuristic check for bots (e.g., direct access without a referrer)
+  // 3. Heuristic check for bots (e.g., direct access without a referrer)
   if (!blockReason && !referer) {
       blockReason = 'No referer';
   }
@@ -58,7 +67,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
   const blockedIps = config.blockedIps || [];
   const blockedUserAgents = config.blockedUserAgents || [];
   
-  // 3. Block User Agents (including specific Facebook rule)
+  // 4. Block User Agents (including specific Facebook rule)
   if (!blockReason && config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
     blockReason = 'Facebook Bot';
   }
@@ -67,12 +76,12 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
     blockReason = `UA blacklisted: ${userAgent}`;
   }
   
-  // 4. Block IPs
+  // 5. Block IPs
   if (!blockReason && blockedIps.includes(ip)) {
     blockReason = `IP blacklisted: ${ip}`;
   }
   
-  // 5. Geo-targeting rules
+  // 6. Geo-targeting rules
   if (!blockReason && config.blockedCountries?.includes(country)) {
     blockReason = `Country blacklisted: ${country}`;
   }
@@ -110,10 +119,17 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
     console.error("Error writing log to Firestore:", error);
   }
 
+  // NOTE: A real implementation of "CDN Injection" and "Honeypot" would happen on the frontend of the destination URL (the money page),
+  // not in this middleware. This middleware can only redirect. The switches in the UI serve to inform the user how to set up their pages.
 
   const urlWithRedirect = new URL(request.url);
   urlWithRedirect.pathname = `/cloak/${slug}/loading`;
   urlWithRedirect.searchParams.set('target', redirectTo);
+  
+  // Pass delay parameter to loading page only if it's a real user and delay is enabled
+  if (decision === 'real' && config.randomDelay) {
+    urlWithRedirect.searchParams.set('delay', 'true');
+  }
   
   return NextResponse.redirect(urlWithRedirect.toString());
 }

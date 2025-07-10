@@ -1,25 +1,35 @@
+
 "use client";
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
+// Utility to generate a random delay
+const getRandomDelay = (min: number, max: number) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 export default function LoadingPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  
   const targetUrl = searchParams.get('target');
+  const delayEnabled = searchParams.get('delay') === 'true';
 
   useEffect(() => {
+    const delay = delayEnabled ? getRandomDelay(600, 2200) : 100; // Minimal delay if not enabled
+
     const timer = setTimeout(() => {
       if (targetUrl) {
         window.location.href = targetUrl;
       } else {
-        // Fallback if target is missing
+        // Fallback if target is missing, should not happen in normal flow
         router.push('/');
       }
-    }, 3000); // 3-second delay
+    }, delay);
 
     return () => clearTimeout(timer);
-  }, [targetUrl, router]);
+  }, [targetUrl, delayEnabled, router]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background text-foreground">

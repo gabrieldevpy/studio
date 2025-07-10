@@ -18,6 +18,8 @@ const formSchema = z.object({
   slug: z.string().min(3, "O slug deve ter pelo menos 3 caracteres.").regex(/^[a-zA-Z0-9_-]+$/, "O slug pode conter apenas letras, números, hífens e sublinhados."),
   realUrls: z.array(z.object({ value: z.string().url("Por favor, insira uma URL válida.") })).min(1, "É necessária pelo menos uma URL real."),
   fakeUrl: z.string().url("Por favor, insira uma URL válida.").or(z.literal('')),
+  notes: z.string().optional(),
+  // Standard Settings
   smartRotation: z.boolean().default(false),
   rotationMode: z.enum(['sequential', 'random']).default('sequential'),
   blockedIps: z.string().optional(),
@@ -25,9 +27,14 @@ const formSchema = z.object({
   allowedCountries: z.array(z.string()).optional(),
   blockedCountries: z.array(z.string()).optional(),
   blockFacebookBots: z.boolean().default(true),
+  // Default Settings
   aiMode: z.boolean().default(true),
   enableEmergency: z.boolean().default(false),
-  notes: z.string().optional(),
+  // Advanced Protections
+  ipRotation: z.boolean().default(false),
+  randomDelay: z.boolean().default(false),
+  cdnInjection: z.boolean().default(false),
+  honeypot: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -55,6 +62,10 @@ export function useNewRouteForm(existingRoute?: any) {
       aiMode: true,
       enableEmergency: true,
       notes: "",
+      ipRotation: false,
+      randomDelay: false,
+      cdnInjection: false,
+      honeypot: false,
     },
   });
 
@@ -81,6 +92,10 @@ export function useNewRouteForm(existingRoute?: any) {
         aiMode: existingRoute.aiMode ?? true,
         enableEmergency: existingRoute.enableEmergency ?? false,
         notes: existingRoute.notes || "",
+        ipRotation: existingRoute.ipRotation || false,
+        randomDelay: existingRoute.randomDelay || false,
+        cdnInjection: existingRoute.cdnInjection || false,
+        honeypot: existingRoute.honeypot || false,
       });
     }
   }, [isEditMode, existingRoute, form]);
