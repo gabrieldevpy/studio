@@ -5,14 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { doc, setDoc } from "firebase/firestore";
 
 export function SignupForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,7 +23,23 @@ export function SignupForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Atualizar o perfil do usuário no Firebase Auth
+      await updateProfile(user, {
+        displayName: fullName,
+      });
+
+      // Criar um documento para o usuário no Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name: fullName,
+        email: email,
+        createdAt: new Date(),
+        plan: "Iniciante", // Plano padrão
+        admin: false // Por padrão, usuários não são administradores
+      });
+
       toast({
         title: "Conta Criada!",
         description: "Sua conta foi criada com sucesso. Redirecionando...",
@@ -50,7 +68,7 @@ export function SignupForm() {
         <div className="grid gap-4">
           <div className="grid gap-2">
               <Label htmlFor="full-name">Nome Completo</Label>
-              <Input id="full-name" placeholder="João da Silva" required />
+              <Input id="full-name" placeholder="João da Silva" required value={fullName} onChange={e => setFullName(e.target.value)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="email">E-mail</Label>

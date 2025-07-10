@@ -3,7 +3,7 @@
 import Link from "next/link"
 import React from "react"
 import { usePathname } from "next/navigation"
-import { Home, Plus, Book, Settings, Activity, Webhook, ShieldAlert, CalendarClock, Crown } from "lucide-react"
+import { Home, Plus, Book, Settings, Activity, Webhook, ShieldAlert, CalendarClock, Crown, Shield } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -17,9 +17,11 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar"
 import { Logo } from "./icons"
+import { useUserData } from "@/hooks/use-user-data"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const { userData } = useUserData();
   const isActive = (path: string) => pathname === path
   
   return (
@@ -33,6 +35,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </SidebarHeader>
           <SidebarMenu>
+            {userData?.admin && (
+               <SidebarMenuItem>
+                <SidebarMenuButton href="/admin" asChild isActive={pathname.startsWith('/admin')} tooltip="Admin">
+                    <Link href="/admin"><Shield /><span>Admin</span></Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
             <SidebarMenuItem>
               <SidebarMenuButton href="/dashboard" asChild isActive={isActive('/dashboard')} tooltip="Painel">
                 <Link href="/dashboard"><Home /><span>Painel</span></Link>
