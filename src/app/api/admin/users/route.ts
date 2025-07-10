@@ -27,7 +27,8 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
 }
 
 export async function GET(request: NextRequest) {
-  if (!(await isAdmin(request))) {
+  const is_admin = await isAdmin(request);
+  if (!is_admin) {
     return new NextResponse('Unauthorized', { status: 403 });
   }
 

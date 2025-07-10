@@ -16,7 +16,7 @@ async function isAdmin(request: NextRequest): Promise<{is_admin: boolean, uid: s
     const userDoc = await db.collection('users').doc(decodedToken.uid).get();
     
     if (!userDoc.exists) {
-      return {is_admin: false, uid: null};
+      return {is_admin: false, uid: decodedToken.uid};
     }
 
     return {is_admin: userDoc.data()?.admin === true, uid: decodedToken.uid};
