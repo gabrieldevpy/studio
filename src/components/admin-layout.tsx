@@ -3,7 +3,7 @@
 import Link from "next/link"
 import React from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2, CreditCard } from "lucide-react"
+import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2, CreditCard, Bot } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -85,6 +85,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                  <Link href="/admin/analytics"><BarChart /><span>Análises</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton href="/admin/bot-wiki" asChild isActive={isActive('/admin/bot-wiki')} tooltip="Bot Wiki">
+                 <Link href="/admin/bot-wiki"><Bot /><span>Bot Wiki</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton href="/admin/settings" asChild isActive={isActive('/admin/settings')} tooltip="Configurações">
                  <Link href="/admin/settings"><Settings /><span>Configurações</span></Link>
@@ -107,7 +112,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset>
         <header className="sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
-          <SidebarTrigger className="sm:hidden" />
+          <SidebarTrigger className="sm-hidden" />
           <div className="flex-1"></div>
         </header>
         <main className="flex-1 p-4 sm:px-6 sm:py-0">
