@@ -18,13 +18,13 @@ import { Input } from "@/components/ui/input"
 import { DashboardLayout } from "@/components/dashboard-layout"
 
 const mockLogs = [
-  { id: '1', ip: '123.45.67.89', country: 'United States', dateTime: '2024-07-29 10:00:00 UTC', redirectedTo: 'real' as const },
-  { id: '2', ip: '98.76.54.32', country: 'Canada', dateTime: '2024-07-29 10:01:15 UTC', redirectedTo: 'fake' as const },
-  { id: '3', ip: '203.0.113.55', country: 'Australia', dateTime: '2024-07-29 10:02:30 UTC', redirectedTo: 'real' as const },
-  { id: '4', ip: '198.51.100.12', country: 'Germany', dateTime: '2024-07-29 10:03:45 UTC', redirectedTo: 'real' as const },
-  { id: '5', ip: '8.8.8.8', country: 'United States', dateTime: '2024-07-29 10:05:00 UTC', redirectedTo: 'fake' as const },
-  { id: '6', ip: '1.1.1.1', country: 'Australia', dateTime: '2024-07-29 10:06:15 UTC', redirectedTo: 'fake' as const },
-  { id: '7', ip: '123.45.67.90', country: 'United States', dateTime: '2024-07-29 10:07:30 UTC', redirectedTo: 'real' as const },
+  { id: '1', ip: '123.45.67.89', country: 'Estados Unidos', dateTime: '2024-07-29 10:00:00 UTC', redirectedTo: 'real' as const },
+  { id: '2', ip: '98.76.54.32', country: 'Canadá', dateTime: '2024-07-29 10:01:15 UTC', redirectedTo: 'fake' as const },
+  { id: '3', ip: '203.0.113.55', country: 'Austrália', dateTime: '2024-07-29 10:02:30 UTC', redirectedTo: 'real' as const },
+  { id: '4', ip: '198.51.100.12', country: 'Alemanha', dateTime: '2024-07-29 10:03:45 UTC', redirectedTo: 'real' as const },
+  { id: '5', ip: '8.8.8.8', country: 'Estados Unidos', dateTime: '2024-07-29 10:05:00 UTC', redirectedTo: 'fake' as const },
+  { id: '6', ip: '1.1.1.1', country: 'Austrália', dateTime: '2024-07-29 10:06:15 UTC', redirectedTo: 'fake' as const },
+  { id: '7', ip: '123.45.67.90', country: 'Estados Unidos', dateTime: '2024-07-29 10:07:30 UTC', redirectedTo: 'real' as const },
 ]
 
 export default function LogsPage({ params }: { params: { slug: string } }) {
@@ -38,26 +38,26 @@ export default function LogsPage({ params }: { params: { slug: string } }) {
         <Button variant="outline" size="icon" className="h-7 w-7" asChild>
           <Link href="/dashboard">
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back</span>
+            <span className="sr-only">Voltar</span>
           </Link>
         </Button>
         <div>
           <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-            Access Logs
+            Logs de Acesso
           </h1>
-          <p className="text-muted-foreground text-sm">Showing logs for route: <span className="font-code text-foreground">{params.slug}</span></p>
+          <p className="text-muted-foreground text-sm">Mostrando logs para a rota: <span className="font-code text-foreground">{params.slug}</span></p>
         </div>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Latest 100 Accesses</CardTitle>
+          <CardTitle>Últimos 100 Acessos</CardTitle>
           <CardDescription>
-            Here are the most recent visitors to your cloaked link.
+            Aqui estão os visitantes mais recentes do seu link com cloaking.
             <div className="relative mt-4">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
                 type="search" 
-                placeholder="Search by IP address..." 
+                placeholder="Buscar por endereço IP..." 
                 className="w-full pl-8 sm:w-64"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -69,10 +69,10 @@ export default function LogsPage({ params }: { params: { slug: string } }) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>IP Address</TableHead>
-                <TableHead>Country</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead className="text-right">Redirected To</TableHead>
+                <TableHead>Endereço IP</TableHead>
+                <TableHead>País</TableHead>
+                <TableHead>Data e Hora</TableHead>
+                <TableHead className="text-right">Redirecionado Para</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -91,7 +91,7 @@ export default function LogsPage({ params }: { params: { slug: string } }) {
               {filteredLogs.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">
-                    No logs found.
+                    Nenhum log encontrado.
                   </TableCell>
                 </TableRow>
               )}

@@ -34,9 +34,9 @@ import React from "react";
 import { generateFakeUrl } from "@/ai/flows/generate-fake-url";
 
 const formSchema = z.object({
-  slug: z.string().min(3, "Slug must be at least 3 characters.").regex(/^[a-zA-Z0-9_-]+$/, "Slug can only contain letters, numbers, hyphens, and underscores."),
-  realUrl: z.string().url("Please enter a valid URL."),
-  fakeUrl: z.string().url("Please enter a valid URL."),
+  slug: z.string().min(3, "O slug deve ter pelo menos 3 caracteres.").regex(/^[a-zA-Z0-9_-]+$/, "O slug pode conter apenas letras, números, hífens e sublinhados."),
+  realUrl: z.string().url("Por favor, insira uma URL válida."),
+  fakeUrl: z.string().url("Por favor, insira uma URL válida."),
   blockedIps: z.string().optional(),
   blockedUserAgents: z.string().optional(),
   allowedCountries: z.array(z.string()).optional(),
@@ -63,7 +63,7 @@ export default function NewRoutePage() {
   const handleGenerateFakeUrl = async () => {
     const realUrl = form.getValues("realUrl");
     if (!realUrl) {
-      form.setError("realUrl", { type: "manual", message: "Please enter a real URL first." });
+      form.setError("realUrl", { type: "manual", message: "Por favor, insira uma URL real primeiro." });
       return;
     }
     
@@ -72,15 +72,15 @@ export default function NewRoutePage() {
       const result = await generateFakeUrl({ realUrl });
       if (result.fakeUrl) {
         form.setValue("fakeUrl", result.fakeUrl, { shouldValidate: true });
-        toast({ title: "Success", description: "Fake URL generated successfully." });
+        toast({ title: "Sucesso", description: "URL falsa gerada com sucesso." });
       } else {
-        throw new Error("No URL returned");
+        throw new Error("Nenhuma URL retornada");
       }
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Could not generate a fake URL. Please try again or enter one manually.",
+        title: "Erro",
+        description: "Não foi possível gerar uma URL falsa. Por favor, tente novamente ou insira uma manualmente.",
       });
     } finally {
       setIsGenerating(false);
@@ -90,8 +90,8 @@ export default function NewRoutePage() {
   function onSubmit(values: z.infer<typeof formSchema>) {
     console.log(values);
     toast({
-      title: "Route Created",
-      description: "Your new route has been created successfully.",
+      title: "Rota Criada",
+      description: "Sua nova rota foi criada com sucesso.",
     });
   }
 
@@ -101,11 +101,11 @@ export default function NewRoutePage() {
         <Button variant="outline" size="icon" className="h-7 w-7" asChild>
           <Link href="/dashboard">
             <ArrowLeft className="h-4 w-4" />
-            <span className="sr-only">Back</span>
+            <span className="sr-only">Voltar</span>
           </Link>
         </Button>
         <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-          Create New Route
+          Criar Nova Rota
         </h1>
       </div>
       <Form {...form}>
@@ -114,9 +114,9 @@ export default function NewRoutePage() {
             <div className="lg:col-span-2 space-y-8">
               <Card>
                 <CardHeader>
-                  <CardTitle>Route Details</CardTitle>
+                  <CardTitle>Detalhes da Rota</CardTitle>
                   <CardDescription>
-                    Define the core redirection logic for your route.
+                    Defina a lógica de redirecionamento principal para sua rota.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -125,13 +125,13 @@ export default function NewRoutePage() {
                     name="slug"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Route Slug</FormLabel>
+                        <FormLabel>Slug da Rota</FormLabel>
                         <div className="flex items-center">
                           <span className="p-2 rounded-l-md bg-muted text-muted-foreground text-sm">cloakdash.com/cloak/</span>
                           <Input placeholder="promo-abc" {...field} className="rounded-l-none" />
                         </div>
                         <FormDescription>
-                          A unique identifier for your route.
+                          Um identificador único para sua rota.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -142,12 +142,12 @@ export default function NewRoutePage() {
                     name="realUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Real URL</FormLabel>
+                        <FormLabel>URL Real</FormLabel>
                         <FormControl>
-                          <Input placeholder="https://your-real-lander.com" {...field} />
+                          <Input placeholder="https://seu-lander-real.com" {...field} />
                         </FormControl>
                         <FormDescription>
-                          The destination for real, high-quality traffic.
+                          O destino para tráfego real e de alta qualidade.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -158,18 +158,18 @@ export default function NewRoutePage() {
                     name="fakeUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Fake URL</FormLabel>
+                        <FormLabel>URL Falsa</FormLabel>
                         <div className="flex gap-2">
                            <FormControl>
-                            <Input placeholder="https://a-safe-page.com" {...field} />
+                            <Input placeholder="https://uma-pagina-segura.com" {...field} />
                            </FormControl>
                            <Button type="button" variant="outline" onClick={handleGenerateFakeUrl} disabled={isGenerating}>
                              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin"/> : <Sparkles className="h-4 w-4 text-primary" />}
-                             <span className="ml-2 hidden md:inline">Generate with AI</span>
+                             <span className="ml-2 hidden md:inline">Gerar com IA</span>
                            </Button>
                         </div>
                         <FormDescription>
-                          The destination for bots and unwanted traffic.
+                          O destino para bots e tráfego indesejado.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -179,9 +179,9 @@ export default function NewRoutePage() {
               </Card>
               <Card>
                 <CardHeader>
-                  <CardTitle>Blacklists</CardTitle>
+                  <CardTitle>Listas de Bloqueio</CardTitle>
                   <CardDescription>
-                    Block specific IPs and User-Agents.
+                    Bloqueie IPs e User-Agents específicos.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -190,12 +190,12 @@ export default function NewRoutePage() {
                     name="blockedIps"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Blocked IPs</FormLabel>
+                        <FormLabel>IPs Bloqueados</FormLabel>
                         <FormControl>
                           <Textarea placeholder="123.45.67.89&#10;192.168.1.0/24" className="min-h-32 font-code" {...field} />
                         </FormControl>
                         <FormDescription>
-                          Enter one IP address or CIDR range per line.
+                          Insira um endereço IP ou intervalo CIDR por linha.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -206,12 +206,12 @@ export default function NewRoutePage() {
                     name="blockedUserAgents"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Blocked User-Agents</FormLabel>
+                        <FormLabel>User-Agents Bloqueados</FormLabel>
                         <FormControl>
                           <Textarea placeholder="GoogleBot&#10;AhrefsBot" className="min-h-32 font-code" {...field} />
                         </FormControl>
                         <FormDescription>
-                          Enter one User-Agent string per line (partial matches supported).
+                          Insira uma string de User-Agent por linha (correspondências parciais são suportadas).
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -225,7 +225,7 @@ export default function NewRoutePage() {
                 <CardHeader>
                   <CardTitle>Geo-Targeting</CardTitle>
                   <CardDescription>
-                    Filter traffic based on country.
+                    Filtre o tráfego com base no país.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -234,16 +234,16 @@ export default function NewRoutePage() {
                     name="allowedCountries"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Allowed Countries</FormLabel>
+                        <FormLabel>Países Permitidos</FormLabel>
                         <MultiSelect
                           options={COUNTRIES}
                           selected={field.value || []}
                           onChange={field.onChange}
-                          placeholder="Select countries..."
+                          placeholder="Selecione países..."
                           className="w-full"
                         />
                         <FormDescription>
-                          Only allow traffic from these countries. Leave empty to allow all.
+                          Permitir tráfego apenas desses países. Deixe em branco para permitir todos.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -254,16 +254,16 @@ export default function NewRoutePage() {
                     name="blockedCountries"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Blocked Countries</FormLabel>
+                        <FormLabel>Países Bloqueados</FormLabel>
                          <MultiSelect
                           options={COUNTRIES}
                           selected={field.value || []}
                           onChange={field.onChange}
-                          placeholder="Select countries..."
+                          placeholder="Selecione países..."
                           className="w-full"
                         />
                         <FormDescription>
-                          Block traffic from these countries.
+                          Bloquear tráfego desses países.
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -273,7 +273,7 @@ export default function NewRoutePage() {
               </Card>
                <Card>
                 <CardHeader>
-                  <CardTitle>Settings</CardTitle>
+                  <CardTitle>Configurações</CardTitle>
                 </CardHeader>
                 <CardContent>
                    <FormField
@@ -282,9 +282,9 @@ export default function NewRoutePage() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">Emergency Button</FormLabel>
+                          <FormLabel className="text-base">Botão de Emergência</FormLabel>
                           <FormDescription>
-                            Enable a one-click button to force all traffic to the fake URL.
+                            Ative um botão de um clique para forçar todo o tráfego para a URL falsa.
                           </FormDescription>
                         </div>
                          <FormControl>
@@ -301,8 +301,8 @@ export default function NewRoutePage() {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" asChild><Link href="/dashboard">Cancel</Link></Button>
-            <Button type="submit">Create Route</Button>
+            <Button variant="outline" asChild><Link href="/dashboard">Cancelar</Link></Button>
+            <Button type="submit">Criar Rota</Button>
           </div>
         </form>
       </Form>

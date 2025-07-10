@@ -14,32 +14,32 @@ export default function SignupPage() {
             <Logo className="h-8 w-8 text-primary" />
             <span className="font-bold text-lg">CloakDash</span>
           </Link>
-          <CardTitle className="text-2xl">Sign Up</CardTitle>
-          <CardDescription>Enter your information to create an account</CardDescription>
+          <CardTitle className="text-2xl">Cadastre-se</CardTitle>
+          <CardDescription>Insira suas informações para criar uma conta</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
             <div className="grid gap-2">
-                <Label htmlFor="full-name">Full name</Label>
-                <Input id="full-name" placeholder="John Doe" required />
+                <Label htmlFor="full-name">Nome Completo</Label>
+                <Input id="full-name" placeholder="João da Silva" required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required />
+              <Label htmlFor="email">E-mail</Label>
+              <Input id="email" type="email" placeholder="m@exemplo.com" required />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" required />
             </div>
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-              Create an account
+              Criar uma conta
             </Button>
             <Button variant="outline" className="w-full">
-              Sign up with Google
+              Cadastre-se com Google
             </Button>
           </div>
           <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
+            Já tem uma conta?{" "}
             <Link href="/login" className="underline">
               Login
             </Link>

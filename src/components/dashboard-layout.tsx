@@ -35,18 +35,18 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/dashboard" asChild isActive={isActive('/dashboard')} tooltip="Dashboard">
-                <Link href="/dashboard"><Home /><span>Dashboard</span></Link>
+              <SidebarMenuButton href="/dashboard" asChild isActive={isActive('/dashboard')} tooltip="Painel">
+                <Link href="/dashboard"><Home /><span>Painel</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton href="/routes/new" asChild isActive={isActive('/routes/new')} tooltip="New Route">
-                <Link href="/routes/new"><Plus /><span>New Route</span></Link>
+              <SidebarMenuButton href="/routes/new" asChild isActive={isActive('/routes/new')} tooltip="Nova Rota">
+                <Link href="/routes/new"><Plus /><span>Nova Rota</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton href="#" asChild tooltip="Documentation" >
-                 <Link href="#"><Book /><span>Documentation</span></Link>
+              <SidebarMenuButton href="#" asChild tooltip="Documentação" >
+                 <Link href="#"><Book /><span>Documentação</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -56,28 +56,28 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center w-full gap-2 p-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="@user" />
+                        <AvatarImage src="https://placehold.co/40x40.png" alt="@usuario" />
                         <AvatarFallback>U</AvatarFallback>
                     </Avatar>
-                    <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">User</span>
+                    <span className="flex-1 text-left group-data-[collapsible=icon]:hidden">Usuário</span>
                     <ChevronDown className="h-4 w-4 group-data-[collapsible=icon]:hidden"/>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56 mb-2" side="top" align="start">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                  <span>Perfil</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
+                  <span>Configurações</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem>
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>Sair</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
