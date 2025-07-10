@@ -39,18 +39,27 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
       return;
     };
 
-    // Simplified query to avoid composite index requirement.
-    // We filter for "fake" logs on the client side.
+    // Query adjusted to avoid composite index.
+    // We now query logs for the user, ordered by time, and then filter client-side.
     const q = query(
       collection(db, "logs"),
       where("userId", "==", user.uid),
       orderBy("timestamp", "desc"),
-      limit(200) // Fetch more logs to have enough data for client-side filtering
+      limit(200) // Fetch a reasonable number of recent logs to analyze
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const logsData = snapshot.docs.map(doc => doc.data());
       setLogs(logsData);
+    }, (error) => {
+        // This will prevent the app from crashing if there's a permission error or other issue
+        console.error("Error fetching logs for StealthEvolution:", error);
+        toast({
+            variant: "destructive",
+            title: "Erro no Motor de IA",
+            description: "Não foi possível carregar os dados para análise."
+        });
+        setLogs([]); // Clear logs on error
     });
 
     return () => unsubscribe();
@@ -65,6 +74,8 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
     const fakeLogs = logs.filter(log => log.redirectedTo === 'fake');
 
     fakeLogs.forEach(log => {
+      if (!log.ip || log.ip === 'unknown') return; // Ignore logs with no IP
+        
       if (!ipCounts[log.ip]) {
         ipCounts[log.ip] = { count: 0, slug: log.slug };
       }
