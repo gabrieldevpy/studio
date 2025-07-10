@@ -12,6 +12,17 @@ import { CalendarClock, PlusCircle, Trash2, Edit, AlertTriangle, ShieldCheck } f
 import { DashboardLayout } from '@/components/dashboard-layout';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { v4 as uuidv4 } from 'uuid';
 
 type TimeRule = {
   id: string;
@@ -47,16 +58,44 @@ const dayMappings = [
 export default function SchedulingPage() {
     const [rules, setRules] = useState<TimeRule[]>(initialRules);
     const [isAdding, setIsAdding] = useState(false);
+    const [ruleToDelete, setRuleToDelete] = useState<TimeRule | null>(null);
+
+    // State for the form fields
+    const [newRule, setNewRule] = useState({
+        routeName: '',
+        days: [] as string[],
+        startTime: '',
+        endTime: '',
+        action: 'force_fake' as 'force_fake' | 'force_real',
+        priority: false,
+    });
 
     const handleSaveRule = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        const ruleToAdd = { ...newRule, id: uuidv4() };
+        setRules(prev => [...prev, ruleToAdd]);
         toast({
             title: "Regra Salva!",
             description: "Sua nova regra de agendamento foi salva com sucesso.",
         });
-        // Lógica de adicionar a regra ao estado viria aqui
         setIsAdding(false);
+        setNewRule({ routeName: '', days: [], startTime: '', endTime: '', action: 'force_fake', priority: false }); // Reset form
     };
+    
+    const handleDeleteRule = () => {
+        if (ruleToDelete) {
+            setRules(rules.filter(rule => rule.id !== ruleToDelete.id));
+            toast({
+                title: "Regra Excluída",
+                description: `A regra para a rota /${ruleToDelete.routeName} foi removida.`,
+            });
+            setRuleToDelete(null);
+        }
+    };
+    
+    // Install uuid and its types if not already present
+    // npm install uuid
+    // npm install --save-dev @types/uuid
 
     return (
         <DashboardLayout>
@@ -85,8 +124,8 @@ export default function SchedulingPage() {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 self-start md:self-center">
-                                        <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
-                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" disabled><Edit className="h-4 w-4" /></Button>
+                                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setRuleToDelete(rule)}><Trash2 className="h-4 w-4" /></Button>
                                     </div>
                                 </div>
                             ))}
@@ -111,7 +150,7 @@ export default function SchedulingPage() {
                                 <CardContent className="space-y-6">
                                     <div className="space-y-2">
                                         <Label htmlFor="route">Rota</Label>
-                                        <Select required>
+                                        <Select required onValueChange={(value) => setNewRule(prev => ({...prev, routeName: value}))} value={newRule.routeName}>
                                             <SelectTrigger id="route">
                                                 <SelectValue placeholder="Selecione a rota" />
                                             </SelectTrigger>
@@ -122,23 +161,23 @@ export default function SchedulingPage() {
                                     </div>
                                     <div className="space-y-2">
                                         <Label>Dias da Semana</Label>
-                                        <ToggleGroup type="multiple" variant="outline" className="justify-start flex-wrap">
+                                        <ToggleGroup type="multiple" variant="outline" className="justify-start flex-wrap" onValueChange={(value) => setNewRule(prev => ({...prev, days: value}))} value={newRule.days}>
                                             {dayMappings.map(day => <ToggleGroupItem key={day.value} value={day.value}>{day.label}</ToggleGroupItem>)}
                                         </ToggleGroup>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label htmlFor="start-time">Início</Label>
-                                            <Input id="start-time" type="time" required />
+                                            <Input id="start-time" type="time" required value={newRule.startTime} onChange={(e) => setNewRule(prev => ({...prev, startTime: e.target.value}))}/>
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="end-time">Fim</Label>
-                                            <Input id="end-time" type="time" required />
+                                            <Input id="end-time" type="time" required value={newRule.endTime} onChange={(e) => setNewRule(prev => ({...prev, endTime: e.target.value}))} />
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <Label htmlFor="action">Ação</Label>
-                                        <Select required defaultValue="force_fake">
+                                        <Select required onValueChange={(value: 'force_fake' | 'force_real') => setNewRule(prev => ({...prev, action: value}))} value={newRule.action}>
                                             <SelectTrigger id="action">
                                                 <SelectValue placeholder="Selecione a ação" />
                                             </SelectTrigger>
@@ -153,7 +192,7 @@ export default function SchedulingPage() {
                                             <Label>Prioridade Alta</Label>
                                             <p className="text-xs text-muted-foreground">Sobrepõe outras regras de filtragem.</p>
                                         </div>
-                                        <Switch />
+                                        <Switch checked={newRule.priority} onCheckedChange={(checked) => setNewRule(prev => ({...prev, priority: checked}))}/>
                                     </div>
                                 </CardContent>
                                 <CardFooter className="flex justify-end gap-2">
@@ -175,6 +214,23 @@ export default function SchedulingPage() {
                      )}
                 </div>
             </div>
+            
+            <AlertDialog open={!!ruleToDelete} onOpenChange={(open) => !open && setRuleToDelete(null)}>
+                <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                    Esta ação não pode ser desfeita. Isso excluirá permanentemente a regra para a rota 
+                    <span className="font-bold font-code text-foreground"> /{ruleToDelete?.routeName}</span>.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteRule} className="bg-destructive hover:bg-destructive/90">
+                    Sim, excluir regra
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </DashboardLayout>
     );
-}
