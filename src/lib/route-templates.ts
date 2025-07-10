@@ -1,4 +1,5 @@
 
+import React from "react";
 import { Facebook } from "lucide-react";
 import { GoogleIcon, TikTokIcon } from "@/components/icons";
 
@@ -18,7 +19,7 @@ export const ROUTE_TEMPLATES: RouteTemplate[] = [
     {
         id: "facebook",
         name: "Facebook Ads",
-        icon: <Facebook className="text-blue-600" />,
+        icon: React.createElement(Facebook, { className: "text-blue-600" }),
         slug: "fb-campanha-xyz",
         blockedIps: [
             "66.220.144.0/20",
@@ -41,7 +42,7 @@ export const ROUTE_TEMPLATES: RouteTemplate[] = [
     {
         id: "google",
         name: "Google Ads",
-        icon: <GoogleIcon />,
+        icon: React.createElement(GoogleIcon),
         slug: "google-campanha-xyz",
         blockedIps: [
             "66.249.64.0/19",
@@ -63,7 +64,7 @@ export const ROUTE_TEMPLATES: RouteTemplate[] = [
     {
         id: "tiktok",
         name: "TikTok Ads",
-        icon: <TikTokIcon />,
+        icon: React.createElement(TikTokIcon),
         slug: "tiktok-campanha-abc",
         blockedIps: [
             "47.246.0.0/16",
