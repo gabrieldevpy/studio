@@ -4,12 +4,12 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { generateFakeUrl } from "@/ai/flows/generate-fake-url";
 import type { RouteTemplate } from "@/lib/route-templates";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "@/lib/firebase";
 
@@ -32,11 +32,12 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function useNewRouteForm() {
+export function useNewRouteForm(existingRoute?: any) {
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [user] = useAuthState(auth);
   const router = useRouter();
+  const isEditMode = !!existingRoute;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -56,6 +57,34 @@ export function useNewRouteForm() {
       notes: "",
     },
   });
+
+  useEffect(() => {
+    if (isEditMode && existingRoute) {
+      let realUrls;
+      if (existingRoute.smartRotation && Array.isArray(existingRoute.realUrl)) {
+        realUrls = existingRoute.realUrl.map((url: string) => ({ value: url }));
+      } else {
+        realUrls = [{ value: existingRoute.realUrl }];
+      }
+
+      form.reset({
+        slug: existingRoute.slug,
+        realUrls: realUrls,
+        fakeUrl: existingRoute.fakeUrl || "",
+        smartRotation: existingRoute.smartRotation || false,
+        rotationMode: existingRoute.rotationMode || 'sequential',
+        blockedIps: Array.isArray(existingRoute.blockedIps) ? existingRoute.blockedIps.join('\n') : "",
+        blockedUserAgents: Array.isArray(existingRoute.blockedUserAgents) ? existingRoute.blockedUserAgents.join('\n') : "",
+        allowedCountries: existingRoute.allowedCountries || [],
+        blockedCountries: existingRoute.blockedCountries || [],
+        blockFacebookBots: existingRoute.blockFacebookBots ?? true,
+        aiMode: existingRoute.aiMode ?? true,
+        enableEmergency: existingRoute.enableEmergency ?? false,
+        notes: existingRoute.notes || "",
+      });
+    }
+  }, [isEditMode, existingRoute, form]);
+
 
   const handleGenerateFakeUrl = async (realUrl?: string) => {
     if (!realUrl) {
@@ -118,7 +147,6 @@ export function useNewRouteForm() {
     const finalValues = {
       ...values,
       userId: user.uid,
-      createdAt: new Date(),
       realUrl: values.smartRotation ? values.realUrls.map(url => url.value) : values.realUrls[0].value,
       // Split textareas into arrays
       blockedIps: values.blockedIps?.split('\n').filter(ip => ip.trim() !== '') || [],
@@ -131,18 +159,27 @@ export function useNewRouteForm() {
     }
 
     try {
-      await addDoc(collection(db, "routes"), finalValues);
-      toast({
-        title: "Rota Criada!",
-        description: "Sua nova rota foi salva e está pronta para uso.",
-      });
-      router.push("/dashboard");
+        if (isEditMode) {
+            const routeRef = doc(db, "routes", existingRoute.id);
+            await updateDoc(routeRef, finalValues);
+            toast({
+                title: "Rota Atualizada!",
+                description: "Suas alterações foram salvas com sucesso.",
+            });
+        } else {
+            await addDoc(collection(db, "routes"), { ...finalValues, createdAt: new Date() });
+            toast({
+                title: "Rota Criada!",
+                description: "Sua nova rota foi salva e está pronta para uso.",
+            });
+        }
+        router.push("/dashboard");
     } catch (error) {
-      console.error("Error creating route: ", error);
+      console.error("Error saving route: ", error);
       toast({
         variant: "destructive",
         title: "Erro ao Salvar",
-        description: "Não foi possível criar a rota. Tente novamente.",
+        description: "Não foi possível salvar a rota. Tente novamente.",
       });
     } finally {
       setIsSubmitting(false);
