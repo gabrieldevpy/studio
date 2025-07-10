@@ -39,12 +39,13 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
       return;
     };
 
+    // Simplified query to avoid composite index requirement.
+    // We filter for "fake" logs on the client side.
     const q = query(
       collection(db, "logs"),
       where("userId", "==", user.uid),
-      where("redirectedTo", "==", "fake"),
       orderBy("timestamp", "desc"),
-      limit(100) // Look at the last 100 fake logs
+      limit(200) // Fetch more logs to have enough data for client-side filtering
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -60,7 +61,10 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
 
     const ipCounts: Record<string, { count: number; slug: string }> = {};
     
-    logs.forEach(log => {
+    // Filter for "fake" logs on the client side
+    const fakeLogs = logs.filter(log => log.redirectedTo === 'fake');
+
+    fakeLogs.forEach(log => {
       if (!ipCounts[log.ip]) {
         ipCounts[log.ip] = { count: 0, slug: log.slug };
       }
