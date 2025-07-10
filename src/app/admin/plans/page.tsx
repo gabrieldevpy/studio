@@ -41,15 +41,15 @@ export default function AdminPlansPage() {
                         <CardContent className="space-y-4">
                              <div>
                                 <Label>Limite de Rotas</Label>
-                                <Input type="number" value={isFinite(plan.routeLimit) ? plan.routeLimit : ''} placeholder={!isFinite(plan.routeLimit) ? 'Ilimitado' : ''}/>
+                                <p className="text-sm p-2 font-medium">{isFinite(plan.routeLimit) ? plan.routeLimit : 'Ilimitado'}</p>
                              </div>
                              <div>
                                 <Label>Descrição de Features</Label>
-                                <Input value={plan.features} />
+                                <p className="text-sm p-2">{plan.features}</p>
                              </div>
                              <div className="flex items-center justify-between pt-2">
                                 <Label>Plano Ativo</Label>
-                                <Switch checked={plan.active} />
+                                <Switch checked={plan.active} readOnly/>
                              </div>
                         </CardContent>
                         <CardFooter className="flex justify-end gap-2">
