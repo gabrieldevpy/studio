@@ -1,6 +1,7 @@
 "use client"
 import Link from "next/link"
 import { Plus, MoreHorizontal, AlertTriangle } from "lucide-react"
+import React from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,8 +23,9 @@ import {
 } from "@/components/ui/table"
 import { Switch } from "@/components/ui/switch"
 import { DashboardLayout } from "@/components/dashboard-layout"
+import { toast } from "@/hooks/use-toast"
 
-const mockRoutes = [
+const initialMockRoutes = [
   { id: '1', slug: 'promo-abc', realUrl: 'https://real-product.com/offer', fakeUrl: 'https://google.com', status: 'ativo', emergency: false, clicks: 1204, realClicks: 980, fakeClicks: 224 },
   { id: '2', slug: 'campaign-xyz', realUrl: 'https://another-real-one.com/page', fakeUrl: 'https://bing.com', status: 'ativo', emergency: true, clicks: 873, realClicks: 650, fakeClicks: 223 },
   { id: '3', slug: 'lander-v2', realUrl: 'https://my-affiliate-link.com/product', fakeUrl: 'https://duckduckgo.com', status: 'inativo', emergency: false, clicks: 0, realClicks: 0, fakeClicks: 0 },
@@ -31,6 +33,21 @@ const mockRoutes = [
 ]
 
 export default function DashboardPage() {
+  const [routes, setRoutes] = React.useState(initialMockRoutes);
+
+  const handleEmergencyChange = (id: string, checked: boolean) => {
+    const updatedRoutes = routes.map(route =>
+      route.id === id ? { ...route, emergency: checked } : route
+    );
+    setRoutes(updatedRoutes);
+    
+    const currentRoute = routes.find(r => r.id === id);
+    toast({
+      title: `Modo de Emergência ${checked ? 'Ativado' : 'Desativado'}`,
+      description: `A rota /${currentRoute?.slug} foi atualizada.`,
+    });
+  };
+
   return (
     <DashboardLayout>
       <div className="flex items-center mb-6">
@@ -65,7 +82,7 @@ export default function DashboardPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockRoutes.map((route) => (
+              {routes.map((route) => (
                 <TableRow key={route.id}>
                   <TableCell>
                     <Badge variant={route.status === 'ativo' ? 'default' : 'secondary'} className={route.status === 'ativo' ? 'bg-green-500/20 text-green-400 border-green-500/20' : ''}>{route.status}</Badge>
@@ -78,7 +95,11 @@ export default function DashboardPage() {
                     <a href={route.fakeUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.fakeUrl}</a>
                   </TableCell>
                   <TableCell className="text-center">
-                    <Switch checked={route.emergency} aria-label="Modo de Emergência" className="data-[state=checked]:bg-destructive" />
+                    <Switch 
+                      checked={route.emergency} 
+                      onCheckedChange={(checked) => handleEmergencyChange(route.id, checked)}
+                      aria-label="Modo de Emergência" 
+                      className="data-[state=checked]:bg-destructive" />
                   </TableCell>
                   <TableCell className="text-right">{route.clicks.toLocaleString('pt-BR')}</TableCell>
                   <TableCell>
