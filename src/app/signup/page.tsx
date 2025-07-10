@@ -23,8 +23,8 @@ export default function SignupPage() {
             <Logo className="h-8 w-8 text-primary" />
             <span className="font-bold text-lg">CloakDash</span>
           </Link>
-          <CardTitle className="text-2xl">Cadastre-se</CardTitle>
-          <CardDescription>Insira suas informações para criar uma conta</CardDescription>
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">Cadastre-se</h1>
+          <p className="text-sm text-muted-foreground">Insira suas informações para criar uma conta</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>

@@ -23,8 +23,8 @@ export default function LoginPage() {
             <Logo className="h-8 w-8 text-primary" />
             <span className="font-bold text-lg">CloakDash</span>
           </Link>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Digite seu e-mail abaixo para fazer login em sua conta</CardDescription>
+          <h1 className="text-2xl font-semibold leading-none tracking-tight">Login</h1>
+          <p className="text-sm text-muted-foreground">Digite seu e-mail abaixo para fazer login em sua conta</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
