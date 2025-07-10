@@ -4,6 +4,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, Shield, Zap, Filter, Globe, ArrowRight, BarChart, Target } from 'lucide-react';
 import { Logo } from '@/components/icons';
 
+function PricingCard({ plan, price, features, isFeatured = false }: { plan: string; price: string; features: string[]; isFeatured?: boolean }) {
+  return (
+    <Card className={`border-2 ${isFeatured ? 'border-primary' : 'border-border'} flex flex-col`}>
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold">{plan}</CardTitle>
+        <p className="text-4xl font-extrabold">{price}<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col">
+        <ul className="space-y-4 text-muted-foreground flex-1">
+          {features.map(feature => (
+            <li key={feature} className="flex items-center">
+              <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+        <Button asChild className={`w-full mt-8 ${isFeatured ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}`} variant={isFeatured ? 'default' : 'outline'}>
+          <Link href="/signup">Escolher Plano</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -14,11 +39,14 @@ export default function LandingPage() {
             <span className="font-bold text-lg">CloakDash</span>
           </Link>
           <nav className="ml-auto flex items-center space-x-2">
+             <Button variant="ghost" asChild>
+              <Link href="#pricing">Preços</Link>
+            </Button>
             <Button variant="ghost" asChild>
               <Link href="/login">Entrar</Link>
             </Button>
             <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
-              <Link href="/signup">Cadastre-se</Link>
+              <Link href="/signup">Cadastre-se Grátis</Link>
             </Button>
           </nav>
         </div>
@@ -78,10 +106,10 @@ export default function LandingPage() {
                   <div className="p-3 rounded-full bg-primary/10 text-primary">
                     <Filter className="h-8 w-8" />
                   </div>
-                  <CardTitle className="text-xl">Filtragem Avançada</CardTitle>
+                  <CardTitle className="text-xl">Filtragem Avançada com IA</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-muted-foreground">Filtre o tráfego por país, dispositivo, faixa de IP, user-agent, referenciador e mais para ter controle granular.</p>
+                  <p className="text-muted-foreground">Filtre o tráfego por país, dispositivo, IP, user-agent e deixe nossa IA aprender e bloquear novas ameaças.</p>
                 </CardContent>
               </Card>
             </div>
@@ -137,33 +165,39 @@ export default function LandingPage() {
               <p className="mt-4 text-lg text-muted-foreground">Escolha o plano certo para você. Sem taxas escondidas.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {['Iniciante', 'Pro', 'Empresarial'].map((plan, index) => (
-                <Card key={plan} className={`border-2 ${index === 1 ? 'border-primary' : 'border-border'} flex flex-col`}>
-                  <CardHeader>
-                    <CardTitle className="text-2xl font-bold">{plan}</CardTitle>
-                    <p className="text-4xl font-extrabold">${index === 0 ? '49' : index === 1 ? '99' : '249'}<span className="text-lg font-normal text-muted-foreground">/mês</span></p>
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <ul className="space-y-4 text-muted-foreground flex-1">
-                      {[
-                        `${(index + 1) * 5} Rotas`,
-                        `${(index + 1) * 100}k Cliques/mês`,
-                        'Filtragem Avançada',
-                        index > 0 ? 'Membros da Equipe' : 'Sem Membros da Equipe',
-                        index > 1 ? 'Suporte Dedicado' : 'Suporte da Comunidade',
-                      ].map(feature => (
-                        <li key={feature} className="flex items-center">
-                          <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Button className={`w-full mt-8 ${index === 1 ? 'bg-primary hover:bg-primary/90 text-primary-foreground' : ''}`} variant={index === 1 ? 'default' : 'outline'}>
-                      Escolher Plano
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+               <PricingCard
+                plan="Iniciante"
+                price="$29"
+                features={[
+                  "5 Rotas",
+                  "50k Cliques/mês",
+                  "Filtragem Padrão",
+                  "Suporte da Comunidade"
+                ]}
+              />
+              <PricingCard
+                plan="Pro"
+                price="$79"
+                isFeatured
+                features={[
+                  "50 Rotas",
+                  "500k Cliques/mês",
+                  "Filtragem Avançada com IA",
+                  "Regras de Agendamento",
+                  "Suporte Prioritário"
+                ]}
+              />
+              <PricingCard
+                plan="Empresarial"
+                price="$199"
+                features={[
+                  "Rotas Ilimitadas",
+                  "Cliques Ilimitados",
+                  "Membros da Equipe",
+                  "Webhooks e API",
+                  "Suporte Dedicado",
+                ]}
+              />
             </div>
           </div>
         </section>
@@ -172,7 +206,7 @@ export default function LandingPage() {
           <div className="container text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl font-headline">Pronto para Proteger Suas Campanhas?</h2>
             <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
-              Cadastre-se hoje e ganhe 7 dias grátis. Experimente o poder e a tranquilidade que o CloakDash oferece.
+              Cadastre-se hoje e ganhe 7 dias grátis no plano Pro. Experimente o poder e a tranquilidade que o CloakDash oferece.
             </p>
             <div className="mt-8">
               <Button size="lg" asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">

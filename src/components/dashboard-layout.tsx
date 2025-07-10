@@ -3,7 +3,7 @@
 import Link from "next/link"
 import React from "react"
 import { usePathname } from "next/navigation"
-import { Home, Plus, Book, Settings, Activity, Webhook, ShieldAlert, CalendarClock } from "lucide-react"
+import { Home, Plus, Book, Settings, Activity, Webhook, ShieldAlert, CalendarClock, UserCog } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -61,6 +61,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <SidebarMenuButton href="/webhooks" asChild isActive={isActive('/webhooks')} tooltip="Webhooks">
                  <Link href="/webhooks"><Webhook /><span>Webhooks</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton href="/settings" asChild isActive={isActive('/settings')} tooltip="Admin">
+                 <Link href="/settings"><UserCog /><span>Admin</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>

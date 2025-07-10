@@ -1,7 +1,7 @@
 
 "use client"
 import Link from "next/link"
-import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon, LogOut } from "lucide-react"
+import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon, LogOut, Crown } from "lucide-react"
 import React from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
@@ -45,7 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { StealthEvolution } from "@/components/stealth-evolution";
+import { AiSuggestions } from "@/components/ai-suggestions";
 import withAuth from "@/components/with-auth";
 import { auth } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -121,14 +121,13 @@ function DashboardPage() {
   };
 
   const handleBlockIp = (ip: string, slug: string) => {
-    // In a real app, this would update a Firestore document.
-    // For this mock, we just log it and show a toast.
+    // In a real app, this would update a Firestore document for the specific route.
     console.log(`[Dashboard] Blocking IP ${ip} for route /${slug}.`);
     toast({
       title: "IP Bloqueado pela IA",
       description: `O IP ${ip} foi adicionado à lista de bloqueio da rota /${slug}.`,
     });
-    // Here you would also update your global state of blocked IPs or re-fetch.
+    // In a real app, you might want to add this to a global or route-specific blocklist state.
   };
 
   const currentData = analyticsData[timeRange];
@@ -143,13 +142,15 @@ function DashboardPage() {
           <p className="text-muted-foreground">Bem-vindo, {user?.email || 'usuário'}!</p>
         </div>
         <div className="flex items-center gap-4">
+            <Button variant="outline" asChild>
+                <Link href="/settings">
+                    <Crown className="mr-2 h-4 w-4" /> Gerenciar Assinatura
+                </Link>
+            </Button>
             <Button asChild id="tour-step-2">
             <Link href="/routes/new">
                 <Plus className="mr-2 h-4 w-4" /> Criar Nova Rota
             </Link>
-            </Button>
-            <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" /> Sair
             </Button>
         </div>
       </div>
@@ -299,7 +300,7 @@ function DashboardPage() {
           </Card>
         </div>
         <div className="xl:col-span-1">
-          <StealthEvolution onBlockIp={handleBlockIp} />
+          <AiSuggestions onBlockIp={handleBlockIp} />
         </div>
       </div>
 
@@ -320,6 +321,12 @@ function DashboardPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+       <div className="absolute bottom-4 right-4 flex items-center gap-4">
+          <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" /> Sair
+          </Button>
+      </div>
     </DashboardLayout>
   )
 }

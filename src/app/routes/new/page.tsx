@@ -9,27 +9,7 @@ import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import withAuth from "@/components/with-auth";
-
-// Dynamically import the form component with SSR disabled
-const NewRouteForm = dynamic(() => import('@/components/new-route-form').then(mod => mod.NewRouteForm), {
-  ssr: false,
-  loading: () => (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <Skeleton className="h-[120px] w-full" />
-          <Skeleton className="h-[450px] w-full" />
-          <Skeleton className="h-[400px] w-full" />
-          <Skeleton className="h-[250px] w-full" />
-        </div>
-        <div className="space-y-8">
-          <Skeleton className="h-[300px] w-full" />
-          <Skeleton className="h-[200px] w-full" />
-        </div>
-      </div>
-    </div>
-  ),
-});
+import { NewRouteForm } from "@/components/new-route-form";
 
 function NewRoutePage() {
   return (

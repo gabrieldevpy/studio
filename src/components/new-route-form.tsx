@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { COUNTRIES } from "@/lib/countries";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { Switch } from "@/components/ui/switch";
@@ -372,7 +371,7 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                       <div className="space-y-0.5">
                         <FormLabel className="text-base flex items-center gap-2">
                           <BrainCircuit className="h-4 w-4 text-primary" />
-                          Modo IA "Stealth Evolution"
+                          Modo IA
                         </FormLabel>
                         <FormDescription>
                           Permitir que a IA aprenda e sugira novas regras de bloqueio.
