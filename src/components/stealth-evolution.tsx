@@ -39,27 +39,33 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
       return;
     };
 
-    // Query adjusted to avoid composite index.
-    // We now query logs for the user, ordered by time, and then filter client-side.
     const q = query(
       collection(db, "logs"),
       where("userId", "==", user.uid),
       orderBy("timestamp", "desc"),
-      limit(200) // Fetch a reasonable number of recent logs to analyze
+      limit(200) 
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const logsData = snapshot.docs.map(doc => doc.data());
       setLogs(logsData);
-    }, (error) => {
-        // This will prevent the app from crashing if there's a permission error or other issue
-        console.error("Error fetching logs for StealthEvolution:", error);
-        toast({
-            variant: "destructive",
-            title: "Erro no Motor de IA",
-            description: "Não foi possível carregar os dados para análise."
-        });
-        setLogs([]); // Clear logs on error
+    }, (error: any) => {
+        if (error.code === 'failed-precondition') {
+            console.warn("Firestore index missing. The AI engine might not work as expected. Please create the required index in your Firebase console.");
+            toast({
+                variant: "destructive",
+                title: "Índice do Firestore Faltando",
+                description: "A consulta para o motor de IA falhou. Verifique o console para o link de criação do índice."
+            })
+        } else {
+            console.error("Error fetching logs for StealthEvolution:", error);
+            toast({
+                variant: "destructive",
+                title: "Erro no Motor de IA",
+                description: "Não foi possível carregar os dados para análise."
+            });
+        }
+        setLogs([]);
     });
 
     return () => unsubscribe();
@@ -70,11 +76,10 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
 
     const ipCounts: Record<string, { count: number; slug: string }> = {};
     
-    // Filter for "fake" logs on the client side
     const fakeLogs = logs.filter(log => log.redirectedTo === 'fake');
 
     fakeLogs.forEach(log => {
-      if (!log.ip || log.ip === 'unknown') return; // Ignore logs with no IP
+      if (!log.ip || log.ip === 'unknown') return;
         
       if (!ipCounts[log.ip]) {
         ipCounts[log.ip] = { count: 0, slug: log.slug };
