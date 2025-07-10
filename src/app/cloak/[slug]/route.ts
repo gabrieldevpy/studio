@@ -1,6 +1,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/server'; // Use server-side admin SDK
+import { blockSuspiciousTraffic } from '@/ai/flows/block-suspicious-traffic';
 
 // Helper to fetch route config from Firestore
 const getRouteConfig = async (slug: string) => {
@@ -21,35 +22,76 @@ const getRouteConfig = async (slug: string) => {
   }
 };
 
+// Helper to send webhook notifications
+const sendWebhookNotification = async (webhookUrl: string, reason: string, details: any) => {
+    if (!webhookUrl) return;
+
+    const payload = {
+        username: "CloakDash Alert",
+        avatar_url: "https://i.imgur.com/4M34hi2.png", // A generic shield icon
+        embeds: [{
+            title: "🚨 Alerta de Tráfego Suspeito",
+            color: 15158332, // Red color
+            fields: [
+                { name: "Rota (Slug)", value: `/${details.slug}`, inline: true },
+                { name: "IP do Visitante", value: details.ip, inline: true },
+                { name: "País", value: details.country, inline: true },
+                { name: "Motivo", value: reason, inline: false },
+                { name: "User Agent", value: `\`\`\`${details.userAgent}\`\`\``, inline: false }
+            ],
+            timestamp: new Date().toISOString()
+        }]
+    };
+
+    try {
+        await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch (error) {
+        console.error(`[Webhook] Failed to send notification for slug ${details.slug}:`, error);
+    }
+}
+
 
 export async function GET(request: NextRequest, { params }: { params: { slug:string } }) {
   const { slug } = params;
   
   const config = await getRouteConfig(slug);
 
-  if (!config) {
-    return new Response('Route not found', { status: 404 });
+  if (!config || !config.realUrl) {
+    return new Response('Route not found or configured incorrectly', { status: 404 });
   }
   
-  let redirectTo = config.realUrl;
+  let redirectTo = Array.isArray(config.realUrl) && config.smartRotation ? config.realUrl[Math.floor(Math.random() * config.realUrl.length)] : config.realUrl;
   let decision = 'real' as 'real' | 'fake';
   let blockReason = '';
 
   const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
   const country = request.geo?.country || 'unknown';
-  const referer = request.headers.get('referer');
+  const referer = request.headers.get('referer') || '';
   
   // --- Start of Decision Logic ---
 
-  // 1. IP Rotation Redirect (Requires Redis or similar for stateful tracking)
-  if (config.ipRotation) {
-    // PSEUDO-CODE: This logic would need a stateful cache like Redis.
-    // const ipAccessCount = await redis.incr(`ip_count:${slug}:${ip}`);
-    // await redis.expire(`ip_count:${slug}:${ip}`, 60); // 60-second window
-    // if (ipAccessCount > 10) { // Example: more than 10 requests in 60s
-    //   blockReason = `IP Rate Limit Exceeded: ${ip}`;
-    // }
+  // 1. IP Rotation Redirect
+  if (!blockReason && config.ipRotation) {
+    const ipLogRef = db.collection('ip_logs').doc(`${slug}_${ip}`);
+    const ipLog = await ipLogRef.get();
+    const now = Date.now();
+    const oneMinute = 60 * 1000;
+
+    if (ipLog.exists) {
+        const data = ipLog.data()!;
+        const requests = (data.requests || []).filter((ts: number) => now - ts < oneMinute);
+        if (requests.length > 10) { // More than 10 requests in 60s
+             blockReason = `IP Rate Limit Exceeded: ${ip}`;
+        }
+        await ipLogRef.set({ requests: [...requests, now] });
+    } else {
+        await ipLogRef.set({ requests: [now] });
+    }
   }
   
   // 2. Emergency mode has highest priority
@@ -57,9 +99,22 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
     blockReason = 'Emergency mode';
   }
 
+  // 3. AI Mode Check
+  if (!blockReason && config.aiMode) {
+      try {
+          const aiResult = await blockSuspiciousTraffic({ ip, userAgent, country, referer });
+          if (aiResult.block) {
+              blockReason = aiResult.reason || 'Blocked by AI';
+          }
+      } catch (error) {
+          console.error(`[AI Check] Error for slug ${slug}:`, error);
+          // Don't block if AI fails, proceed to other rules
+      }
+  }
+
   const userAgentLower = userAgent.toLowerCase();
   
-  // 3. Heuristic check for bots (e.g., direct access without a referrer)
+  // 4. Heuristic check for bots (e.g., direct access without a referrer)
   if (!blockReason && !referer) {
       blockReason = 'No referer';
   }
@@ -67,7 +122,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
   const blockedIps = config.blockedIps || [];
   const blockedUserAgents = config.blockedUserAgents || [];
   
-  // 4. Block User Agents (including specific Facebook rule)
+  // 5. Block User Agents (including specific Facebook rule)
   if (!blockReason && config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
     blockReason = 'Facebook Bot';
   }
@@ -76,12 +131,12 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
     blockReason = `UA blacklisted: ${userAgent}`;
   }
   
-  // 5. Block IPs
+  // 6. Block IPs
   if (!blockReason && blockedIps.includes(ip)) {
     blockReason = `IP blacklisted: ${ip}`;
   }
   
-  // 6. Geo-targeting rules
+  // 7. Geo-targeting rules
   if (!blockReason && config.blockedCountries?.includes(country)) {
     blockReason = `Country blacklisted: ${country}`;
   }
@@ -96,6 +151,10 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
     console.log(`[${slug}] Blocked. Reason: ${blockReason}. Visitor: IP=${ip}, UA=${userAgent}, Country=${country}, Referer=${referer}`);
     redirectTo = config.fakeUrl;
     decision = 'fake';
+    // Send webhook if configured and a block occurred
+    if (config.webhookUrl) {
+        await sendWebhookNotification(config.webhookUrl, blockReason, { slug, ip, country, userAgent });
+    }
   } else {
      console.log(`[${slug}] Allowed. Visitor: IP=${ip}, UA=${userAgent}, Country=${country}, Referer=${referer}`);
   }
@@ -119,8 +178,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
     console.error("Error writing log to Firestore:", error);
   }
 
-  // NOTE: A real implementation of "CDN Injection" and "Honeypot" would happen on the frontend of the destination URL (the money page),
-  // not in this middleware. This middleware can only redirect. The switches in the UI serve to inform the user how to set up their pages.
+  // NOTE: "CDN Injection" and "Honeypot" are frontend implementations on the destination page.
+  // The switches in the UI inform the user how to set up their pages.
 
   const urlWithRedirect = new URL(request.url);
   urlWithRedirect.pathname = `/cloak/${slug}/loading`;
