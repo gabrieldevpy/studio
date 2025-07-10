@@ -5,18 +5,18 @@ import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import withAuth from "@/components/with-auth";
-import { Crown, CheckCircle, BarChart, Route, Infinity, Loader2 } from "lucide-react";
+import { Crown, CheckCircle, BarChart, Route, Infinity as InfinityIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useUserData } from "@/hooks/use-user-data";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
 
 type Plan = {
     name: "Iniciante" | "Pro" | "Empresarial";
+    priceId: string; // Adicionado para integração com Stripe/etc.
     price: string;
     features: string[];
     routeLimit: number;
@@ -28,6 +28,7 @@ type Plan = {
 
 function SettingsPage() {
   const { user, userData, loading: userLoading } = useUserData();
+  const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isChangingPlan, setIsChangingPlan] = useState<string | null>(null);
 
@@ -37,6 +38,7 @@ function SettingsPage() {
       const allPlans: Omit<Plan, 'isCurrent'>[] = [
           {
               name: "Iniciante",
+              priceId: "price_iniciante_mensal", // Exemplo de ID de preço
               price: "$29",
               features: [
                   "5 Rotas",
@@ -50,6 +52,7 @@ function SettingsPage() {
           },
           {
               name: "Pro",
+              priceId: "price_pro_mensal", // Exemplo de ID de preço
               price: "$79",
               features: [
                   "50 Rotas",
@@ -64,6 +67,7 @@ function SettingsPage() {
           },
           {
               name: "Empresarial",
+              priceId: "price_empresarial_mensal", // Exemplo de ID de preço
               price: "$199",
               features: [
                   "Rotas Ilimitadas",
@@ -85,24 +89,49 @@ function SettingsPage() {
     }
   }, [userData]);
   
-  const handlePlanChange = async (planName: Plan['name']) => {
+  const handlePlanChange = async (plan: Plan) => {
     if (!user) {
         toast({ variant: "destructive", title: "Erro", description: "Usuário não encontrado." });
         return;
     }
-    setIsChangingPlan(planName);
+    setIsChangingPlan(plan.name);
+
     try {
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, {
-            plan: planName
+        const idToken = await user.getIdToken();
+        const response = await fetch('/api/checkout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({
+                planName: plan.name,
+                priceId: plan.priceId,
+            }),
         });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Falha ao criar a sessão de checkout.');
+        }
+
+        const data = await response.json();
+
+        // Em uma integração real, você redirecionaria para o checkout:
+        // window.location.href = data.checkoutUrl;
+        
+        // Para simulação, exibimos uma mensagem e atualizamos a página
         toast({
             title: "Plano Atualizado!",
-            description: `Seu plano foi alterado para ${planName} com sucesso.`
+            description: `Seu plano foi alterado para ${plan.name} com sucesso.`,
         });
-    } catch(error) {
+
+        // Recarregar a página ou revalidar os dados para refletir a mudança
+        router.refresh(); 
+
+    } catch(error: any) {
         console.error("Error changing plan:", error);
-        toast({ variant: "destructive", title: "Erro", description: "Não foi possível alterar seu plano." });
+        toast({ variant: "destructive", title: "Erro", description: error.message || "Não foi possível alterar seu plano." });
     } finally {
         setIsChangingPlan(null);
     }
@@ -155,14 +184,14 @@ function SettingsPage() {
                 <div className="space-y-2">
                     <div className="flex justify-between items-center text-sm">
                         <p className="flex items-center gap-2 text-muted-foreground"><Route className="h-4 w-4"/>Uso de Rotas</p>
-                        <p className="font-medium text-foreground">{currentUser.routesUsed} / {currentPlanDetails?.routeLimit === Infinity ? <Infinity className="h-4 w-4"/> : currentPlanDetails?.routeLimit}</p>
+                        <p className="font-medium text-foreground">{currentUser.routesUsed} / {currentPlanDetails?.routeLimit === Infinity ? <InfinityIcon className="h-4 w-4"/> : currentPlanDetails?.routeLimit}</p>
                     </div>
                     {currentPlanDetails && currentPlanDetails.routeLimit !== Infinity && <Progress value={(currentUser.routesUsed / currentPlanDetails.routeLimit) * 100} />}
                 </div>
                  <div className="space-y-2">
                     <div className="flex justify-between items-center text-sm">
                         <p className="flex items-center gap-2 text-muted-foreground"><BarChart className="h-4 w-4"/>Uso de Cliques</p>
-                        <p className="font-medium text-foreground">{currentUser.clicksUsed.toLocaleString('pt-BR')} / {currentPlanDetails?.clickLimit === Infinity ? <Infinity className="h-4 w-4"/> : currentPlanDetails?.clickLimit.toLocaleString('pt-BR')}</p>
+                        <p className="font-medium text-foreground">{currentUser.clicksUsed.toLocaleString('pt-BR')} / {currentPlanDetails?.clickLimit === Infinity ? <InfinityIcon className="h-4 w-4"/> : currentPlanDetails?.clickLimit.toLocaleString('pt-BR')}</p>
                     </div>
                     {currentPlanDetails && currentPlanDetails.clickLimit !== Infinity && <Progress value={(currentUser.clicksUsed / currentPlanDetails.clickLimit) * 100} />}
                 </div>
@@ -223,10 +252,10 @@ function SettingsPage() {
                         className="w-full"
                         disabled={plan.isCurrent || !!isChangingPlan}
                         variant={plan.isCurrent ? "outline" : "default"}
-                        onClick={() => handlePlanChange(plan.name)}
+                        onClick={() => handlePlanChange(plan)}
                         >
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            {plan.isCurrent ? 'Seu Plano Atual' : (isLoading ? 'Alterando...' : 'Escolher Plano')}
+                            {plan.isCurrent ? 'Seu Plano Atual' : (isLoading ? 'Processando...' : 'Fazer Upgrade/Downgrade')}
                         </Button>
                     </CardFooter>
                 </Card>
