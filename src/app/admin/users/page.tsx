@@ -2,20 +2,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AdminLayout } from "@/components/admin-layout";
 import withAuth from "@/components/with-auth";
 import { Users, MoreHorizontal, AlertCircle } from "lucide-react";
-import { db } from "@/lib/firebase";
 import { useUserData } from "@/hooks/use-user-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth } from "@/lib/firebase";
 
 type User = {
   id: string;
@@ -28,6 +28,7 @@ type User = {
 
 function AdminUsersPage() {
   const { userData, loading: userLoading } = useUserData();
+  const [authUser] = useAuthState(auth);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
@@ -38,19 +39,32 @@ function AdminUsersPage() {
         setIsAuthorized(true);
       } else {
         setIsAuthorized(false);
+        setLoading(false);
       }
     }
   }, [userData, userLoading]);
 
   useEffect(() => {
-    if (isAuthorized) {
+    if (isAuthorized && authUser) {
       const fetchUsers = async () => {
         setLoading(true);
         try {
-          const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
-          const usersSnapshot = await getDocs(q);
-          const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-          setUsers(usersData);
+           const idToken = await authUser.getIdToken();
+           const response = await fetch('/api/admin/users', {
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch users');
+          }
+          const usersData: User[] = await response.json();
+          // Firestore Timestamps are serialized, so we need to convert them back
+           setUsers(usersData.map(user => ({
+            ...user,
+            createdAt: user.createdAt ? new Date((user.createdAt as any)._seconds * 1000) : new Date()
+          })));
         } catch (error) {
           console.error("Error fetching users:", error);
           toast({
@@ -64,12 +78,13 @@ function AdminUsersPage() {
       };
       fetchUsers();
     }
-  }, [isAuthorized]);
+  }, [isAuthorized, authUser]);
 
   if (userLoading || loading || isAuthorized === null) {
     return (
       <AdminLayout>
         <div className="flex items-center mb-6">
+          <Users className="h-8 w-8 mr-2" />
           <h1 className="text-3xl font-bold">Gerenciamento de Usuários</h1>
         </div>
         <Card>
@@ -138,7 +153,7 @@ function AdminUsersPage() {
                    <TableCell>
                      {user.admin ? <Badge>Sim</Badge> : <Badge variant="secondary">Não</Badge>}
                    </TableCell>
-                  <TableCell>{user.createdAt?.toDate().toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>{user.createdAt?.toLocaleDateString('pt-BR')}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
