@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link"
-import React, { useState, useEffect } from "react"
+import React from "react"
 import { usePathname } from "next/navigation"
 import { Home, Plus, Book, Settings, Server, Activity } from "lucide-react"
 import {
@@ -43,13 +43,13 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton href="#" asChild tooltip="Live Feed">
-                 <Link href="#"><Activity /><span>Live Feed</span></Link>
+              <SidebarMenuButton href="/live-feed" asChild isActive={isActive('/live-feed')} tooltip="Live Feed">
+                 <Link href="/live-feed"><Activity /><span>Live Feed</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton href="#" asChild tooltip="Proxies">
-                 <Link href="#"><Server /><span>Proxies</span></Link>
+              <SidebarMenuButton href="/proxies" asChild isActive={isActive('/proxies')} tooltip="Proxies">
+                 <Link href="/proxies"><Server /><span>Proxies</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
@@ -58,8 +58,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
-              <SidebarMenuButton href="#" asChild tooltip="Configurações">
-                 <Link href="#"><Settings /><span>Configurações</span></Link>
+              <SidebarMenuButton href="/settings" asChild isActive={isActive('/settings')} tooltip="Configurações">
+                 <Link href="/settings"><Settings /><span>Configurações</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
