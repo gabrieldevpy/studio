@@ -3,7 +3,7 @@
 import Link from "next/link"
 import React from "react"
 import { usePathname } from "next/navigation"
-import { Home, Plus, Book, Settings, Activity, Webhook, ShieldAlert } from "lucide-react"
+import { Home, Plus, Book, Settings, Activity, Webhook, ShieldAlert, CalendarClock } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -46,6 +46,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
              <SidebarMenuItem>
               <SidebarMenuButton href="/live-feed" asChild isActive={isActive('/live-feed')} tooltip="Live Feed">
                  <Link href="/live-feed"><Activity /><span>Live Feed</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton href="/scheduling" asChild isActive={isActive('/scheduling')} tooltip="Agendamentos">
+                 <Link href="/scheduling"><CalendarClock /><span>Agendamentos</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
