@@ -3,7 +3,7 @@
 
 import React from "react";
 import { FormProvider, useFieldArray } from "react-hook-form";
-import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw, BrainCircuit, ShieldAlert, Timer, Cloud, MousePointerClick } from "lucide-react";
+import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw, BrainCircuit, ShieldAlert, Timer } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -420,21 +420,6 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-1">
-                 <FormField
-                  control={form.control}
-                  name="ipRotation"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2"><RotateCw className="h-4 w-4 text-primary"/>IP Rotation Redirect</FormLabel>
-                        <FormDescription>
-                          Redireciona IPs com acessos rápidos. Requer cache externo (ex: Redis).
-                        </FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="randomDelay"
@@ -444,36 +429,6 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                         <FormLabel className="text-base flex items-center gap-2"><Timer className="h-4 w-4 text-primary"/>Delay Aleatório</FormLabel>
                         <FormDescription>
                            Aplica um atraso de 600-2200ms antes do redirecionamento final.
-                        </FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="cdnInjection"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2"><Cloud className="h-4 w-4 text-primary"/>CDN-Injection Fake</FormLabel>
-                        <FormDescription>
-                          Lembrete para simular um CDN na sua URL Real. (configuração externa)
-                        </FormDescription>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="honeypot"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base flex items-center gap-2"><MousePointerClick className="h-4 w-4 text-primary"/>Honeypot Invisível</FormLabel>
-                        <FormDescription>
-                           Lembrete para adicionar uma "armadilha" na sua URL Real. (configuração externa)
                         </FormDescription>
                       </div>
                       <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
