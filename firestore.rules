@@ -1,38 +1,32 @@
-
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Users can read their own user document
+
+    // Users can only read/update their own user document.
+    // Admins can read any user document.
     match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth.uid == userId 
+                    || (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true);
+      allow update: if request.auth.uid == userId;
+      allow create: if request.auth.uid != null;
     }
 
-    // Rules for the 'routes' collection
+    // Routes can only be accessed by their owner.
+    // Admins can read any route.
     match /routes/{routeId} {
-      // Allow create if the user is authenticated and the userId matches their own UID
-      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
-      
-      // Allow read, update, delete only for the user who owns the route
-      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if request.auth.uid == resource.data.userId 
+                    || (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true);
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth.uid == resource.data.userId;
     }
 
-    // Rules for the 'logs' collection
+    // Logs can only be accessed by their owner.
+    // Admins can read any log.
+    // The cloak function can create logs without auth.
     match /logs/{logId} {
-      // The backend (Firebase Admin SDK) can write logs. Clients can't.
-      allow create: if request.auth == null; 
-      
-      // Allow read only for the user who owns the logged route
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-
-      // Nobody can update or delete logs from the client
-      allow update, delete: if false;
-    }
-
-    // Public read for any other collection (if any) - adjust as needed
-    match /{document=**} {
-      allow read: if false;
+      allow read: if request.auth.uid == resource.data.userId
+                    || (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true);
+      allow create: if request.auth == null || request.auth.uid == request.resource.data.userId;
     }
   }
 }
