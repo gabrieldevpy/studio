@@ -9,10 +9,9 @@ async function verifyAdmin(idToken: string): Promise<{ isAdmin: boolean; uid: st
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
-    // Check the 'admins' collection instead of the 'users' collection field
-    const adminDoc = await db.collection('admins').doc(uid).get();
+    const userDoc = await db.collection('users').doc(uid).get();
 
-    if (adminDoc.exists && adminDoc.data()?.role === 'admin') {
+    if (userDoc.exists && userDoc.data()?.admin === true) {
         return { isAdmin: true, uid };
     }
 

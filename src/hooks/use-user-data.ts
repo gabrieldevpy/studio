@@ -8,6 +8,7 @@ import { auth, db } from '@/lib/firebase';
 
 type UserData = {
     // Adicione outros campos do usuário aqui conforme necessário
+    admin?: boolean;
     [key: string]: any;
 };
 
@@ -18,46 +19,40 @@ export function useUserData() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        let userSub: (() => void) | undefined;
-        let adminSub: (() => void) | undefined;
+        let unsubscribe: (() => void) | undefined;
 
-        const fetchUserData = () => {
-            if (user) {
-                const userRef = doc(db, 'users', user.uid);
-                userSub = onSnapshot(userRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setUserData(docSnap.data() as UserData);
-                    } else {
-                        setUserData(null);
-                    }
-                }, (error) => {
-                    console.error("Error fetching user data:", error);
+        if (user) {
+            setLoading(true);
+            const userRef = doc(db, 'users', user.uid);
+            unsubscribe = onSnapshot(userRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data() as UserData;
+                    setUserData(data);
+                    setIsAdmin(data.admin === true);
+                } else {
+                    // User document might not exist yet if they just signed up
                     setUserData(null);
-                });
-
-                const adminRef = doc(db, 'admins', user.uid);
-                adminSub = onSnapshot(adminRef, (docSnap) => {
-                    setIsAdmin(docSnap.exists() && docSnap.data()?.role === 'admin');
-                    setLoading(false); // Consider loading finished once we know admin status
-                }, (error) => {
-                    console.error("Error fetching admin status:", error);
                     setIsAdmin(false);
-                    setLoading(false);
-                });
-
-            } else {
+                }
+                setLoading(false);
+            }, (error) => {
+                console.error("Error fetching user data:", error);
                 setUserData(null);
                 setIsAdmin(false);
                 setLoading(false);
-            }
-        };
+            });
+        } else {
+            // No user is logged in
+            setUserData(null);
+            setIsAdmin(false);
+            setLoading(false);
+        }
 
-        fetchUserData();
-
-        // Cleanup the listeners when the component unmounts or user changes
+        // Cleanup the listener when the component unmounts or user changes
         return () => {
-            if (userSub) userSub();
-            if (adminSub) adminSub();
+            if (unsubscribe) {
+                unsubscribe();
+            }
         };
     }, [user]);
 

@@ -9,10 +9,9 @@ async function verifyAdmin(idToken: string): Promise<{ isAdmin: boolean; uid: st
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const uid = decodedToken.uid;
     
-    // Check the 'admins' collection instead of the 'users' collection field
-    const adminDoc = await db.collection('admins').doc(uid).get();
+    const userDoc = await db.collection('users').doc(uid).get();
 
-    if (adminDoc.exists && adminDoc.data()?.role === 'admin') {
+    if (userDoc.exists && userDoc.data()?.admin === true) {
         return { isAdmin: true, uid };
     }
 
@@ -49,16 +48,11 @@ export async function GET(request: NextRequest) {
   try {
     const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
     
-    // Fetch all admins to mark them in the user list
-    const adminsSnapshot = await db.collection('admins').get();
-    const adminIds = new Set(adminsSnapshot.docs.map(doc => doc.id));
-    
     const users = usersSnapshot.docs.map(doc => {
       const userData = doc.data();
       return { 
         id: doc.id, 
         ...userData,
-        admin: adminIds.has(doc.id)
       };
     });
 

@@ -31,12 +31,16 @@ export function SignupForm() {
         displayName: fullName,
       });
 
+      // Check if the email is the special admin email
+      const isAdmin = email === 'gsommer782@gmail.com';
+
       // Create a document for the user in Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: fullName,
         email: email,
         createdAt: new Date(),
         plan: "Iniciante", // Default plan
+        admin: isAdmin, // Set admin status
       });
 
       toast({

@@ -3,7 +3,7 @@
 import Link from "next/link"
 import React from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2, UserPlus } from "lucide-react"
+import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2 } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -23,7 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, userData, isAdmin, loading: userLoading } = useUserData();
+  const { user, isAdmin, loading: userLoading } = useUserData();
   const isActive = (path: string) => pathname === path
 
   const handleRedirectToLogin = () => {
@@ -89,11 +89,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <SidebarMenuButton href="/admin/settings" asChild isActive={isActive('/admin/settings')} tooltip="Configurações">
                  <Link href="/admin/settings"><Settings /><span>Configurações</span></Link>
               </SidebarMenuButton>
-            </SidebarMenuItem>
-             <SidebarMenuItem>
-                <SidebarMenuButton href="/admin/add-admin-instructions" asChild isActive={isActive('/admin/add-admin-instructions')} tooltip="Adicionar Admin">
-                    <Link href="/admin/add-admin-instructions"><UserPlus /><span>Adicionar Admin</span></Link>
-                </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
                 <SidebarMenuButton href="/dashboard" asChild tooltip="Voltar ao App">
