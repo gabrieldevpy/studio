@@ -14,6 +14,8 @@ import { useUserData } from "@/hooks/use-user-data";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 type User = {
   id: string;
@@ -38,20 +40,20 @@ function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!userLoading && userData && !userData.admin) {
-      router.replace('/dashboard');
-      toast({
-        variant: 'destructive',
-        title: 'Acesso Negado',
-        description: 'Você não tem permissão para acessar esta página.',
-      });
+    if (!userLoading) {
+      if (userData?.admin) {
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
+      }
     }
   }, [userData, userLoading, router]);
 
   useEffect(() => {
-    if (userData?.admin) {
+    if (isAuthorized) {
       const fetchAdminData = async () => {
         setLoading(true);
         try {
@@ -94,11 +96,11 @@ function AdminPage() {
       };
       fetchAdminData();
     }
-  }, [userData]);
+  }, [isAuthorized]);
   
   const recentUsers = users.sort((a,b) => b.createdAt?.toDate() - a.createdAt?.toDate()).slice(0, 5);
 
-  if (userLoading || loading || !userData?.admin) {
+  if (userLoading || loading || isAuthorized === null) {
      return (
         <AdminLayout>
              <div className="flex items-center mb-6">
@@ -112,6 +114,20 @@ function AdminPage() {
              <Skeleton className="h-96" />
         </AdminLayout>
      )
+  }
+
+  if (!isAuthorized) {
+    return (
+      <AdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acesso Negado</AlertTitle>
+          <AlertDescription>
+            Você não tem permissão para visualizar esta página.
+          </AlertDescription>
+        </Alert>
+      </AdminLayout>
+    );
   }
 
   return (

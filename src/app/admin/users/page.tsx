@@ -8,14 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { AdminLayout } from "@/components/admin-layout";
 import withAuth from "@/components/with-auth";
-import { Users, MoreHorizontal } from "lucide-react";
+import { Users, MoreHorizontal, AlertCircle } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { useUserData } from "@/hooks/use-user-data";
-import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type User = {
   id: string;
@@ -28,18 +28,22 @@ type User = {
 
 function AdminUsersPage() {
   const { userData, loading: userLoading } = useUserData();
-  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!userLoading && userData && !userData.admin) {
-      router.replace('/dashboard');
+    if (!userLoading) {
+      if (userData?.admin) {
+        setIsAuthorized(true);
+      } else {
+        setIsAuthorized(false);
+      }
     }
-  }, [userData, userLoading, router]);
+  }, [userData, userLoading]);
 
   useEffect(() => {
-    if (userData?.admin) {
+    if (isAuthorized) {
       const fetchUsers = async () => {
         setLoading(true);
         try {
@@ -60,9 +64,9 @@ function AdminUsersPage() {
       };
       fetchUsers();
     }
-  }, [userData]);
+  }, [isAuthorized]);
 
-  if (userLoading || loading || !userData?.admin) {
+  if (userLoading || loading || isAuthorized === null) {
     return (
       <AdminLayout>
         <div className="flex items-center mb-6">
@@ -77,6 +81,20 @@ function AdminUsersPage() {
             <Skeleton className="h-96 w-full" />
           </CardContent>
         </Card>
+      </AdminLayout>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <AdminLayout>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Acesso Negado</AlertTitle>
+          <AlertDescription>
+            Você não tem permissão para visualizar esta página.
+          </AlertDescription>
+        </Alert>
       </AdminLayout>
     );
   }
