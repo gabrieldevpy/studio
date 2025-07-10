@@ -1,3 +1,4 @@
+
 "use client"
 
 import React, { useEffect, useState } from 'react';
@@ -5,13 +6,23 @@ import Joyride, { CallBackProps, STATUS, Step } from 'react-joyride';
 
 export const DashboardTour = () => {
   const [run, setRun] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem('cloakdash_tour_seen');
-    if (!hasSeenTour) {
-      setRun(true);
-    }
+    setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (isMounted) {
+      const hasSeenTour = localStorage.getItem('cloakdash_tour_seen');
+      if (!hasSeenTour) {
+        // Use a timeout to ensure the DOM is ready for Joyride to find the targets
+        setTimeout(() => {
+          setRun(true);
+        }, 100);
+      }
+    }
+  }, [isMounted]);
 
   const steps: Step[] = [
     {
@@ -32,7 +43,7 @@ export const DashboardTour = () => {
   ];
 
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status, type } = data;
+    const { status } = data;
     const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
 
     if (finishedStatuses.includes(status)) {
@@ -40,6 +51,10 @@ export const DashboardTour = () => {
       setRun(false);
     }
   };
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <Joyride
@@ -58,20 +73,23 @@ export const DashboardTour = () => {
       }}
       styles={{
         options: {
-          arrowColor: '#1A1A1A',
-          backgroundColor: '#1A1A1A',
-          primaryColor: '#FB4C6E',
-          textColor: '#FFFFFF',
+          arrowColor: 'hsl(var(--card))',
+          backgroundColor: 'hsl(var(--card))',
+          primaryColor: 'hsl(var(--primary))',
+          textColor: 'hsl(var(--card-foreground))',
           zIndex: 1000,
         },
         buttonClose: {
-            color: '#FFFFFF'
+            color: 'hsl(var(--card-foreground))'
         },
         buttonNext: {
-            backgroundColor: '#FB4C6E',
+            backgroundColor: 'hsl(var(--primary))',
         },
         buttonBack: {
-            color: '#FB4C6E'
+            color: 'hsl(var(--primary))'
+        },
+        spotlight: {
+          borderRadius: 'var(--radius)'
         }
       }}
     />
