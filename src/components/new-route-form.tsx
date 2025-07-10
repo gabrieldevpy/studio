@@ -428,7 +428,7 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                       <div className="space-y-0.5">
                         <FormLabel className="text-base flex items-center gap-2"><RotateCw className="h-4 w-4 text-primary"/>IP Rotation Redirect</FormLabel>
                         <FormDescription>
-                          Redireciona IPs com acessos muito rápidos. Requer cache.
+                          Redireciona IPs com acessos rápidos. Requer cache externo (ex: Redis).
                         </FormDescription>
                       </div>
                       <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
@@ -443,7 +443,7 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                       <div className="space-y-0.5">
                         <FormLabel className="text-base flex items-center gap-2"><Timer className="h-4 w-4 text-primary"/>Delay Aleatório</FormLabel>
                         <FormDescription>
-                           Aplica um atraso de 600-2200ms antes de redirecionar.
+                           Aplica um atraso de 600-2200ms antes do redirecionamento final.
                         </FormDescription>
                       </div>
                       <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
@@ -458,7 +458,7 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                       <div className="space-y-0.5">
                         <FormLabel className="text-base flex items-center gap-2"><Cloud className="h-4 w-4 text-primary"/>CDN-Injection Fake</FormLabel>
                         <FormDescription>
-                          Instrução para sua página real simular carregamento via CDN.
+                          Lembrete para simular um CDN na sua URL Real. (configuração externa)
                         </FormDescription>
                       </div>
                       <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
@@ -473,7 +473,7 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                       <div className="space-y-0.5">
                         <FormLabel className="text-base flex items-center gap-2"><MousePointerClick className="h-4 w-4 text-primary"/>Honeypot Invisível</FormLabel>
                         <FormDescription>
-                          Instrução para sua página real conter uma "armadilha" para bots.
+                           Lembrete para adicionar uma "armadilha" na sua URL Real. (configuração externa)
                         </FormDescription>
                       </div>
                       <FormControl><Switch checked={field.value} onCheckedChange={field.onChange}/></FormControl>
