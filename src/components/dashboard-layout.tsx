@@ -73,8 +73,8 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton href="#" asChild tooltip="Documentação" >
-                 <Link href="#"><Book /><span>Documentação</span></Link>
+              <SidebarMenuButton href="/docs" asChild isActive={isActive('/docs')} tooltip="Documentação" >
+                 <Link href="/docs"><Book /><span>Documentação</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
