@@ -12,11 +12,11 @@ async function verifyAdmin(idToken: string): Promise<{ isAdmin: boolean; uid: st
     // Check the 'admins' collection instead of the 'users' collection field
     const adminDoc = await db.collection('admins').doc(uid).get();
 
-    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
-      return { isAdmin: false, uid, error: 'User is not an admin.' };
+    if (adminDoc.exists && adminDoc.data()?.role === 'admin') {
+        return { isAdmin: true, uid };
     }
 
-    return { isAdmin: true, uid };
+    return { isAdmin: false, uid, error: 'User is not an admin.' };
   } catch (error: any) {
     console.error('Error verifying admin token:', error.code, error.message);
     if (error.code === 'auth/id-token-expired') {
