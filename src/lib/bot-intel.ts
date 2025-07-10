@@ -8,38 +8,46 @@ let lastFetchTimestamp = 0;
 
 const CACHE_TTL = 1000 * 60 * 30; // 30 minutes in milliseconds
 
-// Default, hardcoded list of known bad actors. This is a baseline.
+// Baseline list focused on essential blocking for Facebook Ads and other major platforms.
 const BASELINE_BOT_INTEL_DATA: GlobalBlocklists = {
   blockedIps: [
-    "199.59.148.0/22", // Twitter Bot
+    // Cloudflare WARP / Proxies are often used to mask traffic.
+    "104.28.192.0/20", 
   ],
   blockedUserAgents: [
-    // General Crawlers
-    "SemrushBot", "AhrefsBot", "DotBot", "PetalBot", "Bytespider",
-    "bingbot", "adidxbot",
-    // AI Crawlers
-    "GPTBot", "ClaudeBot", "Perplexity-User", "anthropic-ai", "CCBot",
-    // Official Facebook Bots
-    "facebookexternalhit", "Facebot",
-    // Official Google Bots
-    "Googlebot", "AdsBot-Google", "Googlebot-Image", "Googlebot-Video", "Googlebot-News", "Mediapartners-Google",
-    // Official TikTok Bots
+    // Essential Facebook Bots
+    "facebookexternalhit",
+    "Facebot",
+    // General Crawlers & Ad Bots
+    "Googlebot",
+    "AdsBot-Google",
+    "bingbot",
     "TikTokBot",
+    "Bytespider",
+    "SemrushBot", 
+    "AhrefsBot",
+    // AI Crawlers
+    "GPTBot", 
+    "ClaudeBot", 
+    "Perplexity-User",
   ],
   blockedAsns: [
-    "15169", // Google LLC
-    "32934", // Meta Platforms, Inc. (Facebook)
+    // ASN for Meta/Facebook
+    "32934",  // META-PLATFORMS-INC
+    "63293",  // FACEBOOK-AS-BLOCK
+    "13335",  // CLOUDFLARENET
+    // Other major datacenters used by bots
+    "15169", // GOOGLE
     "16509", // AMAZON-02
     "8075",  // MICROSOFT-CORP-MSN-AS-BLOCK
-    "714",   // Apple Inc.
-    "13335"  // Cloudflare
   ],
 };
 
 
 /**
  * Fetches global blocklists from Firestore, combines them with a baseline list,
- * and caches the result.
+ * and caches the result. This simulates an "AI" that frequently updates lists
+ * by combining a managed baseline with user-specific rules.
  */
 export async function getBotIntelData(): Promise<BotIntelData> {
   const now = Date.now();

@@ -41,6 +41,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
 
   // --- Start of Decision Logic ---
 
+  // 1. Emergency mode has highest priority
   if (config.emergency) {
     blockReason = 'Emergency mode';
   }
@@ -53,8 +54,8 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
 
   const userAgentLower = userAgent.toLowerCase();
   
-  // Heuristic check for bots
-  if (!referer) {
+  // 2. Heuristic check for bots (e.g., direct access without a referrer)
+  if (!blockReason && !referer) {
       blockReason = 'No referer';
   }
   
@@ -62,22 +63,26 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
   const combinedBlockedIps = [...(config.blockedIps || []), ...(botIntel.blockedIps || [])];
   const combinedBlockedUserAgents = [...(config.blockedUserAgents || []), ...(botIntel.blockedUserAgents || [])];
   
+  // 3. Block User Agents (including specific Facebook rule)
   if (!blockReason && config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
     blockReason = 'Facebook Bot';
-  }
-  
-  if (!blockReason && combinedBlockedIps.includes(ip)) {
-    blockReason = `IP blacklisted: ${ip}`;
   }
   
   if (!blockReason && combinedBlockedUserAgents.some((ua:string) => userAgentLower.includes(ua.toLowerCase()))) {
     blockReason = `UA blacklisted: ${userAgent}`;
   }
   
+  // 4. Block IPs
+  if (!blockReason && combinedBlockedIps.includes(ip)) {
+    blockReason = `IP blacklisted: ${ip}`;
+  }
+  
+  // 5. Block ASNs (Datacenters)
   if (!blockReason && botIntel.blockedAsns.some((blockedAsn: string) => asn?.toString().includes(blockedAsn))) {
     blockReason = `ASN blacklisted: ${asn}`;
   }
-
+  
+  // 6. Geo-targeting rules
   if (!blockReason && config.blockedCountries?.includes(country)) {
     blockReason = `Country blacklisted: ${country}`;
   }
