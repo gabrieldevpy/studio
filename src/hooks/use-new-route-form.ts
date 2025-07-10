@@ -32,6 +32,9 @@ const formSchema = z.object({
   enableEmergency: z.boolean().default(false),
   // Advanced Protections
   randomDelay: z.boolean().default(false),
+  ipRotation: z.boolean().default(false),
+  cdnInjection: z.boolean().default(false),
+  honeypot: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -60,6 +63,9 @@ export function useNewRouteForm(existingRoute?: any) {
       enableEmergency: true,
       notes: "",
       randomDelay: false,
+      ipRotation: false,
+      cdnInjection: false,
+      honeypot: false,
     },
   });
 
@@ -87,6 +93,9 @@ export function useNewRouteForm(existingRoute?: any) {
         enableEmergency: existingRoute.enableEmergency ?? false,
         notes: existingRoute.notes || "",
         randomDelay: existingRoute.randomDelay || false,
+        ipRotation: existingRoute.ipRotation || false,
+        cdnInjection: existingRoute.cdnInjection || false,
+        honeypot: existingRoute.honeypot || false,
       });
     }
   }, [isEditMode, existingRoute, form]);

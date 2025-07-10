@@ -1,9 +1,9 @@
 
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { FormProvider, useFieldArray } from "react-hook-form";
-import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw, BrainCircuit, ShieldAlert, Timer } from "lucide-react";
+import { Loader2, Sparkles, FileText, Trash, PlusCircle, RotateCw, BrainCircuit, ShieldAlert, Timer, DatabaseZap, Code, MousePointerClick } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -35,10 +35,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+
+const CodeBlock = ({ text }: { text: string }) => (
+    <pre className="mt-2 rounded-md bg-muted p-4 font-code text-sm text-muted-foreground overflow-x-auto">
+        <code>{text}</code>
+    </pre>
+);
 
 export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
   const { form, onSubmit, handleGenerateFakeUrl, isGenerating, isSubmitting, applyTemplate, router } = useNewRouteForm(existingRoute);
+  
+  const [showIpRotationModal, setShowIpRotationModal] = useState(false);
+  const [showCdnInjectionModal, setShowCdnInjectionModal] = useState(false);
+  const [showHoneypotModal, setShowHoneypotModal] = useState(false);
   
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -46,6 +65,16 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
   });
   
   const isEditMode = !!existingRoute;
+
+  const handleSwitchChange = (field: "ipRotation" | "cdnInjection" | "honeypot", checked: boolean) => {
+    if (!checked) {
+        form.setValue(field, false);
+        return;
+    }
+    if (field === 'ipRotation') setShowIpRotationModal(true);
+    if (field === 'cdnInjection') setShowCdnInjectionModal(true);
+    if (field === 'honeypot') setShowHoneypotModal(true);
+  }
 
   return (
     <FormProvider {...form}>
@@ -435,6 +464,51 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                     </FormItem>
                   )}
                 />
+                 <FormField
+                  control={form.control}
+                  name="ipRotation"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><DatabaseZap className="h-4 w-4 text-primary"/>IP Rotation Redirect</FormLabel>
+                        <FormDescription>
+                            Redireciona IPs com alta frequência de acesso. Requer setup externo.
+                        </FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={(checked) => handleSwitchChange('ipRotation', checked)} /></FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="cdnInjection"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><Code className="h-4 w-4 text-primary"/>CDN-Injection Fake</FormLabel>
+                        <FormDescription>
+                            Simula que sua página está em um CDN. Requer setup na sua URL Real.
+                        </FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={(checked) => handleSwitchChange('cdnInjection', checked)} /></FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="honeypot"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base flex items-center gap-2"><MousePointerClick className="h-4 w-4 text-primary"/>Honeypot Invisível</FormLabel>
+                        <FormDescription>
+                            Cria uma "armadilha" para bots na sua página. Requer setup na URL Real.
+                        </FormDescription>
+                      </div>
+                      <FormControl><Switch checked={field.value} onCheckedChange={(checked) => handleSwitchChange('honeypot', checked)} /></FormControl>
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
           </div>
@@ -447,6 +521,93 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
           </Button>
         </div>
       </form>
+       {/* IP Rotation Modal */}
+       <Dialog open={showIpRotationModal} onOpenChange={setShowIpRotationModal}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Como Ativar o IP Rotation Redirect</DialogTitle>
+                    <DialogDescription>
+                        Esta funcionalidade requer uma configuração externa para funcionar.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 text-sm">
+                    <p>O IP Rotation precisa de um banco de dados de cache rápido (como <span className="font-semibold">Redis</span> ou <span className="font-semibold">Memcached</span>) para rastrear a frequência de acesso de cada IP em tempo real.</p>
+                    <p className="font-semibold">Passos para configurar:</p>
+                    <ol className="list-decimal list-inside space-y-2">
+                        <li>Configure uma instância do Redis acessível pela sua aplicação.</li>
+                        <li>No arquivo <code className="font-code text-primary">/src/app/cloak/[slug]/route.ts</code>, descomente o pseudo-código e adicione sua lógica de conexão com o Redis para incrementar e verificar o contador de acessos do IP.</li>
+                    </ol>
+                    <p>Ativar esta opção apenas salva a preferência no banco de dados. A lógica de bloqueio precisa ser implementada por você no back-end.</p>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+                    <Button onClick={() => {
+                        form.setValue('ipRotation', true);
+                        setShowIpRotationModal(false);
+                    }}>Entendi, Ativar</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        
+        {/* CDN Injection Modal */}
+        <Dialog open={showCdnInjectionModal} onOpenChange={setShowCdnInjectionModal}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Como Ativar o CDN-Injection Fake</DialogTitle>
+                    <DialogDescription>
+                        Esta funcionalidade deve ser implementada na sua URL Real.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 text-sm">
+                    <p>A "Injeção de CDN" é uma técnica para fazer sua página de destino (URL Real) parecer mais legítima, simulando que seus scripts são carregados de um CDN conhecido.</p>
+                     <p className="font-semibold">Como implementar:</p>
+                     <ol className="list-decimal list-inside space-y-2">
+                        <li>No código HTML da sua <span className="font-semibold">URL Real</span>, adicione um script que carrega dinamicamente seu script principal.</li>
+                        <li>Use um nome de arquivo que pareça vir de um CDN, por exemplo:</li>
+                    </ol>
+                     <CodeBlock text={`<script src="https://cdn.your-domain.com/assets/main.js"></script>`} />
+                    <p>Ativar esta opção no painel serve como um lembrete para você implementar esta técnica. Não há alteração automática no comportamento do redirecionamento.</p>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+                    <Button onClick={() => {
+                        form.setValue('cdnInjection', true);
+                        setShowCdnInjectionModal(false);
+                    }}>Entendi, Ativar</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        {/* Honeypot Modal */}
+        <Dialog open={showHoneypotModal} onOpenChange={setShowHoneypotModal}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Como Ativar o Honeypot Invisível</DialogTitle>
+                    <DialogDescription>
+                        Esta funcionalidade deve ser implementada na sua URL Real.
+                    </DialogDescription>
+                </DialogHeader>
+                 <div className="space-y-4 text-sm">
+                    <p>Um "Honeypot" (pote de mel) é uma armadilha para bots. Adicionamos um link ou botão invisível na página que apenas bots (que analisam o código-fonte) conseguiriam "ver" e clicar.</p>
+                     <p className="font-semibold">Como implementar:</p>
+                     <ol className="list-decimal list-inside space-y-2">
+                        <li>Adicione o seguinte código HTML no `<body>` da sua <span className="font-semibold">URL Real</span>:</li>
+                    </ol>
+                     <CodeBlock text={`<div style="opacity: 0; position: absolute; top: 0; left: 0; height: 1px; width: 1px; z-index: -1;">\n  <a href="https://example.com/bot-trap">Não clique aqui</a>\n</div>`} />
+                    <p>
+                        2. Crie uma regra no servidor ou na sua aplicação para banir qualquer visitante que acesse a URL <code className="font-code text-primary">/bot-trap</code>.
+                    </p>
+                    <p>Ativar esta opção no painel serve como um lembrete para você implementar esta técnica.</p>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+                    <Button onClick={() => {
+                        form.setValue('honeypot', true);
+                        setShowHoneypotModal(false);
+                    }}>Entendi, Ativar</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </FormProvider>
   );
 }
