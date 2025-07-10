@@ -362,5 +362,3 @@ export default function NewRoutePage() {
     </DashboardLayout>
   );
 }
-
-    

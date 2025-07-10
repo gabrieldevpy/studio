@@ -20,11 +20,6 @@ import { Logo } from "./icons"
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isActive = (path: string) => pathname === path
-  const [isClient, setIsClient] = useState(false)
-
-  useEffect(() => {
-    setIsClient(true)
-  }, [])
   
   return (
     <SidebarProvider>
@@ -78,7 +73,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className="flex-1"></div>
         </header>
         <main className="flex-1 p-4 sm:px-6 sm:py-0">
-          {isClient ? children : null}
+          {children}
         </main>
       </SidebarInset>
     </SidebarProvider>
