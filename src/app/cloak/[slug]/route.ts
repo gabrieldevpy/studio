@@ -1,11 +1,11 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/server'; // Use server-side admin SDK
+import { getBotIntelData } from '@/lib/bot-intel';
 
 // Helper to fetch route config from Firestore
 const getRouteConfig = async (slug: string) => {
   try {
-    console.log(`[Firestore] Looking up config for slug: ${slug}`);
     const routesRef = db.collection('routes');
     const snapshot = await routesRef.where('slug', '==', slug).limit(1).get();
 
@@ -15,7 +15,6 @@ const getRouteConfig = async (slug: string) => {
     }
 
     const routeDoc = snapshot.docs[0];
-    // In a real app, you would add more validation here
     return { id: routeDoc.id, ...routeDoc.data() };
   } catch (error) {
     console.error(`[Firestore] Error fetching route config for slug ${slug}:`, error);
@@ -27,7 +26,10 @@ const getRouteConfig = async (slug: string) => {
 export async function GET(request: NextRequest, { params }: { params: { slug:string } }) {
   const { slug } = params;
   
-  const config = await getRouteConfig(slug);
+  const [config, botIntel] = await Promise.all([
+    getRouteConfig(slug),
+    getBotIntelData() // Fetch bot intelligence data
+  ]);
 
   if (!config) {
     return new Response('Route not found', { status: 404 });
@@ -35,64 +37,64 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
   
   let redirectTo = config.realUrl;
   let decision = 'real' as 'real' | 'fake';
+  let blockReason = '';
 
   // --- Start of Decision Logic ---
 
   if (config.emergency) {
-    console.log(`[${slug}] Emergency mode ON. Redirecting to fake URL.`);
-    redirectTo = config.fakeUrl;
-    decision = 'fake';
+    blockReason = 'Emergency mode';
   }
 
   const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown';
   const userAgent = request.headers.get('user-agent') || 'unknown';
   const country = request.geo?.country || 'unknown';
   const referer = request.headers.get('referer');
-
-  console.log(`[${slug}] Visitor Info: IP=${ip}, UA=${userAgent}, Country=${country}, Referer=${referer}`);
+  const asn = request.ipLocation?.asn;
 
   const userAgentLower = userAgent.toLowerCase();
   
   // Heuristic check for bots
   if (!referer) {
-      console.log(`[${slug}] No referer header. Potential bot. Redirecting to fake URL.`);
-      redirectTo = config.fakeUrl;
-      decision = 'fake';
+      blockReason = 'No referer';
   }
   
-  else if (config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
-    console.log(`[${slug}] Facebook Bot detected. Redirecting to fake URL.`);
-    redirectTo = config.fakeUrl;
-    decision = 'fake';
+  // Combine route-specific and global blocklists
+  const combinedBlockedIps = [...(config.blockedIps || []), ...(botIntel.blockedIps || [])];
+  const combinedBlockedUserAgents = [...(config.blockedUserAgents || []), ...(botIntel.blockedUserAgents || [])];
+  
+  if (!blockReason && config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
+    blockReason = 'Facebook Bot';
   }
   
-  else if (config.blockedIps?.includes(ip)) {
-    console.log(`[${slug}] IP ${ip} is blacklisted. Redirecting to fake URL.`);
-    redirectTo = config.fakeUrl;
-    decision = 'fake';
+  if (!blockReason && combinedBlockedIps.includes(ip)) {
+    blockReason = `IP blacklisted: ${ip}`;
   }
   
-  else if (config.blockedUserAgents?.some((ua:string) => userAgentLower.includes(ua.toLowerCase()))) {
-    console.log(`[${slug}] UA ${userAgent} is blacklisted. Redirecting to fake URL.`);
-    redirectTo = config.fakeUrl;
-    decision = 'fake';
+  if (!blockReason && combinedBlockedUserAgents.some((ua:string) => userAgentLower.includes(ua.toLowerCase()))) {
+    blockReason = `UA blacklisted: ${userAgent}`;
   }
   
-  else if (config.blockedCountries?.includes(country)) {
-    console.log(`[${slug}] Country ${country} is blacklisted. Redirecting to fake URL.`);
-    redirectTo = config.fakeUrl;
-    decision = 'fake';
+  if (!blockReason && botIntel.blockedAsns.some((blockedAsn: string) => asn?.toString().includes(blockedAsn))) {
+    blockReason = `ASN blacklisted: ${asn}`;
+  }
+
+  if (!blockReason && config.blockedCountries?.includes(country)) {
+    blockReason = `Country blacklisted: ${country}`;
   }
   
-  else if (config.allowedCountries?.length > 0 && !config.allowedCountries.includes(country)) {
-    console.log(`[${slug}] Country ${country} is not in allowed list. Redirecting to fake URL.`);
-    redirectTo = config.fakeUrl;
-    decision = 'fake';
+  if (!blockReason && config.allowedCountries?.length > 0 && !config.allowedCountries.includes(country)) {
+    blockReason = `Country not in allowed list: ${country}`;
   }
 
   // --- End of Decision Logic ---
 
-  console.log(`[${slug}] Final decision: Redirecting to ${redirectTo}`);
+  if (blockReason) {
+    console.log(`[${slug}] Blocked. Reason: ${blockReason}. Visitor: IP=${ip}, UA=${userAgent}, Country=${country}, Referer=${referer}`);
+    redirectTo = config.fakeUrl;
+    decision = 'fake';
+  } else {
+     console.log(`[${slug}] Allowed. Visitor: IP=${ip}, UA=${userAgent}, Country=${country}, Referer=${referer}`);
+  }
   
   // Save log to Firestore
   try {
@@ -107,6 +109,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
       redirectedTo: decision,
       targetUrl: redirectTo,
       timestamp: new Date(),
+      blockReason: blockReason || null, // Add reason to the log
     });
   } catch(error) {
     console.error("Error writing log to Firestore:", error);

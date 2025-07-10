@@ -3,7 +3,7 @@
 import Link from "next/link"
 import React from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2, Mail } from "lucide-react"
+import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2, Mail, Bot } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -83,6 +83,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <SidebarMenuButton href="/admin/analytics" asChild isActive={isActive('/admin/analytics')} tooltip="Análises">
                  <Link href="/admin/analytics"><BarChart /><span>Análises</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton href="/admin/bot-intel" asChild isActive={isActive('/admin/bot-intel')} tooltip="Bot Intelligence">
+                 <Link href="/admin/bot-intel"><Bot /><span>Bot Intelligence</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
