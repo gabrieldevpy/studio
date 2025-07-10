@@ -1,7 +1,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 import { db } from '@/lib/firebase/server'; // Use server-side admin SDK
-import { getBotIntelData } from '@/lib/bot-intel';
 
 // Helper to fetch route config from Firestore
 const getRouteConfig = async (slug: string) => {
@@ -26,10 +25,7 @@ const getRouteConfig = async (slug: string) => {
 export async function GET(request: NextRequest, { params }: { params: { slug:string } }) {
   const { slug } = params;
   
-  const [config, botIntel] = await Promise.all([
-    getRouteConfig(slug),
-    getBotIntelData() // Fetch bot intelligence data
-  ]);
+  const config = await getRouteConfig(slug);
 
   if (!config) {
     return new Response('Route not found', { status: 404 });
@@ -59,30 +55,24 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
       blockReason = 'No referer';
   }
   
-  // Combine route-specific and global blocklists
-  const combinedBlockedIps = [...(config.blockedIps || []), ...(botIntel.blockedIps || [])];
-  const combinedBlockedUserAgents = [...(config.blockedUserAgents || []), ...(botIntel.blockedUserAgents || [])];
+  const blockedIps = config.blockedIps || [];
+  const blockedUserAgents = config.blockedUserAgents || [];
   
   // 3. Block User Agents (including specific Facebook rule)
   if (!blockReason && config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
     blockReason = 'Facebook Bot';
   }
   
-  if (!blockReason && combinedBlockedUserAgents.some((ua:string) => userAgentLower.includes(ua.toLowerCase()))) {
+  if (!blockReason && blockedUserAgents.some((ua:string) => userAgentLower.includes(ua.toLowerCase()))) {
     blockReason = `UA blacklisted: ${userAgent}`;
   }
   
   // 4. Block IPs
-  if (!blockReason && combinedBlockedIps.includes(ip)) {
+  if (!blockReason && blockedIps.includes(ip)) {
     blockReason = `IP blacklisted: ${ip}`;
   }
   
-  // 5. Block ASNs (Datacenters)
-  if (!blockReason && botIntel.blockedAsns.some((blockedAsn: string) => asn?.toString().includes(blockedAsn))) {
-    blockReason = `ASN blacklisted: ${asn}`;
-  }
-  
-  // 6. Geo-targeting rules
+  // 5. Geo-targeting rules
   if (!blockReason && config.blockedCountries?.includes(country)) {
     blockReason = `Country blacklisted: ${country}`;
   }

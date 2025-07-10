@@ -47,7 +47,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { StealthEvolution } from "@/components/stealth-evolution";
 import withAuth from "@/components/with-auth";
 import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -149,14 +148,6 @@ function DashboardPage() {
     }
   };
   
-  const handleBlockIp = (ip: string, slug: string) => {
-    console.log(`[Dashboard] Blocking IP ${ip} for route /${slug}. This should update the route doc in Firestore.`);
-    toast({
-      title: "IP Bloqueado pela IA",
-      description: `O IP ${ip} foi adicionado à lista de bloqueio da rota /${slug}.`,
-    });
-  };
-
   const currentData = analyticsData[timeRange];
   const totalClicks = currentData.reduce((acc, entry) => acc + entry.value, 0);
   
@@ -274,8 +265,8 @@ function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
-        <div className="xl:col-span-2">
+      <div className="grid grid-cols-1 gap-6 mb-6">
+        <div className="col-span-1">
           <Card>
             <CardHeader>
                 <div className="flex items-center justify-between">
@@ -367,9 +358,6 @@ function DashboardPage() {
               </Table>
             </CardContent>
           </Card>
-        </div>
-        <div className="xl:col-span-1">
-          <StealthEvolution onBlockIp={handleBlockIp} />
         </div>
       </div>
 

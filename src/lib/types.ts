@@ -1,4 +1,5 @@
 
+
 export type GlobalBlocklists = {
   blockedIps: string[];
   blockedUserAgents: string[];
