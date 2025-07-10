@@ -35,7 +35,8 @@ import { Separator } from "@/components/ui/separator";
 import { useNewRouteForm } from "@/hooks/use-new-route-form";
 import { COUNTRIES } from "@/lib/countries";
 import { ROUTE_TEMPLATES } from "@/lib/route-templates";
-import { Loader2, Trash2, BrainCircuit, Wand2 } from "lucide-react";
+import { Loader2, Trash2, BrainCircuit, Wand2, Info } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
   const isEditMode = !!existingRoute;
@@ -463,14 +464,16 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                   control={form.control}
                   name="randomDelay"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between">
-                      <FormLabel>Atraso Aleatório</FormLabel>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <FormLabel>Atraso Aleatório</FormLabel>
+                            <FormDescription>
+                                Adiciona um pequeno delay antes do redirecionamento para simular um carregamento real.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
                     </FormItem>
                   )}
                 />
@@ -478,14 +481,16 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                   control={form.control}
                   name="ipRotation"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between">
-                      <FormLabel>Rotação de IP</FormLabel>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
+                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <FormLabel>Rotação de IP</FormLabel>
+                             <FormDescription>
+                                Se um IP acessar a rota múltiplas vezes em um curto período, ele será redirecionado para a URL Falsa.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                            <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
                     </FormItem>
                   )}
                 />
@@ -493,30 +498,57 @@ export function NewRouteForm({ existingRoute }: { existingRoute?: any }) {
                   control={form.control}
                   name="cdnInjection"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between">
-                      <FormLabel>Injeção de CDN</FormLabel>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
+                    <div className="space-y-3 rounded-lg border p-3 shadow-sm">
+                        <div className="flex flex-row items-center justify-between">
+                            <div className="space-y-0.5">
+                                <FormLabel>Injeção de CDN</FormLabel>
+                                <FormDescription>
+                                    Ofusca o referer original, fazendo parecer que o tráfego vem de uma CDN.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange}/>
+                            </FormControl>
+                        </div>
+                         {form.watch("cdnInjection") && (
+                            <Alert variant="default" className="bg-muted/50">
+                                <Info className="h-4 w-4" />
+                                <AlertTitle>Como configurar</AlertTitle>
+                                <AlertDescription>
+                                   Adicione o seguinte script na tag `<head>` da sua <strong>URL Real (Money Page)</strong>:
+                                   <pre className="text-xs bg-background p-2 rounded mt-2 font-code whitespace-pre-wrap">{`<script src="https://cloakdash.com/cdn.js" async defer></script>`}</pre>
+                                </AlertDescription>
+                            </Alert>
+                         )}
+                    </div>
                   )}
                 />
                  <FormField
                   control={form.control}
                   name="honeypot"
                   render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between">
-                      <FormLabel>Página Honeypot</FormLabel>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
+                    <div className="space-y-3 rounded-lg border p-3 shadow-sm">
+                        <div className="flex flex-row items-center justify-between">
+                            <div className="space-y-0.5">
+                                <FormLabel>Página Honeypot</FormLabel>
+                                <FormDescription>
+                                    Cria links invisíveis na sua página para capturar bots que os seguem.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange}/>
+                            </FormControl>
+                        </div>
+                        {form.watch("honeypot") && (
+                            <Alert variant="default" className="bg-muted/50">
+                                <Info className="h-4 w-4" />
+                                <AlertTitle>Como configurar</AlertTitle>
+                                <AlertDescription>
+                                   Adicione a seguinte tag `<div id="honeypot-container"></div>` no final do `<body>` da sua <strong>URL Real (Money Page)</strong>. Nosso sistema irá popular esta div com links-armadilha.
+                                </AlertDescription>
+                            </Alert>
+                         )}
+                    </div>
                   )}
                 />
               </CardContent>
