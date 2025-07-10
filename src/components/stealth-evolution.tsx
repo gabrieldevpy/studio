@@ -1,14 +1,17 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { ShieldPlus, ShieldOff, BrainCircuit } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MOCK_LOGS } from "@/lib/mock-logs";
 import { toast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { collection, query, where, onSnapshot, orderBy, limit } from "firebase/firestore";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth, db } from "@/lib/firebase";
+
 
 type Suggestion = {
   type: "ip";
@@ -27,20 +30,42 @@ const SUSPICIOUS_IP_THRESHOLD = 3;
 export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
   const [ignoredSuggestions, setIgnoredSuggestions] = useState<string[]>([]);
   const [aiEnabled, setAiEnabled] = useState(true);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [user] = useAuthState(auth);
+
+  useEffect(() => {
+    if (!user || !aiEnabled) {
+      setLogs([]);
+      return;
+    };
+
+    const q = query(
+      collection(db, "logs"),
+      where("userId", "==", user.uid),
+      where("redirectedTo", "==", "fake"),
+      orderBy("timestamp", "desc"),
+      limit(100) // Look at the last 100 fake logs
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const logsData = snapshot.docs.map(doc => doc.data());
+      setLogs(logsData);
+    });
+
+    return () => unsubscribe();
+  }, [user, aiEnabled]);
 
   const suggestions = useMemo(() => {
     if (!aiEnabled) return [];
 
     const ipCounts: Record<string, { count: number; slug: string }> = {};
     
-    MOCK_LOGS.forEach(log => {
-      if (log.redirectedTo === "fake") {
-        if (!ipCounts[log.ip]) {
-          ipCounts[log.ip] = { count: 0, slug: log.slug };
-        }
-        ipCounts[log.ip].count++;
-        ipCounts[log.ip].slug = log.slug; // Ensure we get the latest slug
+    logs.forEach(log => {
+      if (!ipCounts[log.ip]) {
+        ipCounts[log.ip] = { count: 0, slug: log.slug };
       }
+      ipCounts[log.ip].count++;
+      ipCounts[log.ip].slug = log.slug; 
     });
 
     const newSuggestions: Suggestion[] = [];
@@ -58,7 +83,7 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
     }
     
     return newSuggestions.sort((a, b) => b.count - a.count);
-  }, [aiEnabled]);
+  }, [logs, aiEnabled]);
 
   const activeSuggestions = suggestions.filter(s => !ignoredSuggestions.includes(`${s.value}-${s.slug}`));
   

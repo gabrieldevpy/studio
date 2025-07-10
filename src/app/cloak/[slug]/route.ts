@@ -1,41 +1,33 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { db } from '@/lib/firebase/server'; // Use server-side admin SDK
 
-// This is a mock database lookup. In a real app, you'd fetch this from a database.
-const getRouteConfig = (slug: string) => {
-  console.log(`Looking up config for slug: ${slug}`);
-  // Mock data for a route.
-  if (slug === 'promo-abc') {
-    return {
-      realUrl: 'https://real-product.com/offer',
-      fakeUrl: 'https://google.com',
-      blockedUserAgents: ['GoogleBot', 'AhrefsBot', 'SemrushBot'],
-      blockedIps: ['1.2.3.4'],
-      allowedCountries: ['US', 'CA'],
-      blockedCountries: ['RU', 'CN'],
-      blockFacebookBots: true,
-      emergency: false,
-    };
-  }
-  return null;
-};
+// Helper to fetch route config from Firestore
+const getRouteConfig = async (slug: string) => {
+  try {
+    console.log(`[Firestore] Looking up config for slug: ${slug}`);
+    const routesRef = db.collection('routes');
+    const snapshot = await routesRef.where('slug', '==', slug).limit(1).get();
 
-// In a real app, this would be initialized with proper credentials
-// and security rules would be in place.
-const mockDb = {
-  collection: (name: string) => ({
-    add: async (data: any) => {
-      console.log(`[MockDB] Adding to ${name}:`, data);
-      return { id: `mock_${Date.now()}` };
+    if (snapshot.empty) {
+      console.log(`[Firestore] No route found for slug: ${slug}`);
+      return null;
     }
-  })
+
+    const routeDoc = snapshot.docs[0];
+    // In a real app, you would add more validation here
+    return { id: routeDoc.id, ...routeDoc.data() };
+  } catch (error) {
+    console.error(`[Firestore] Error fetching route config for slug ${slug}:`, error);
+    return null;
+  }
 };
 
 
 export async function GET(request: NextRequest, { params }: { params: { slug:string } }) {
   const { slug } = params;
   
-  const config = getRouteConfig(slug);
+  const config = await getRouteConfig(slug);
 
   if (!config) {
     return new Response('Route not found', { status: 404 });
@@ -74,25 +66,25 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
     decision = 'fake';
   }
   
-  else if (config.blockedIps.includes(ip)) {
+  else if (config.blockedIps?.includes(ip)) {
     console.log(`[${slug}] IP ${ip} is blacklisted. Redirecting to fake URL.`);
     redirectTo = config.fakeUrl;
     decision = 'fake';
   }
   
-  else if (config.blockedUserAgents.some(ua => userAgentLower.includes(ua.toLowerCase()))) {
+  else if (config.blockedUserAgents?.some((ua:string) => userAgentLower.includes(ua.toLowerCase()))) {
     console.log(`[${slug}] UA ${userAgent} is blacklisted. Redirecting to fake URL.`);
     redirectTo = config.fakeUrl;
     decision = 'fake';
   }
   
-  else if (config.blockedCountries.includes(country)) {
+  else if (config.blockedCountries?.includes(country)) {
     console.log(`[${slug}] Country ${country} is blacklisted. Redirecting to fake URL.`);
     redirectTo = config.fakeUrl;
     decision = 'fake';
   }
   
-  else if (config.allowedCountries.length > 0 && !config.allowedCountries.includes(country)) {
+  else if (config.allowedCountries?.length > 0 && !config.allowedCountries.includes(country)) {
     console.log(`[${slug}] Country ${country} is not in allowed list. Redirecting to fake URL.`);
     redirectTo = config.fakeUrl;
     decision = 'fake';
@@ -104,7 +96,9 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
   
   // Save log to Firestore
   try {
-     await mockDb.collection('logs').add({
+     await db.collection('logs').add({
+      routeId: config.id,
+      userId: config.userId, // Store the owner of the route
       slug: slug,
       ip: ip,
       country: country,
@@ -115,7 +109,7 @@ export async function GET(request: NextRequest, { params }: { params: { slug:str
       timestamp: new Date(),
     });
   } catch(error) {
-    console.error("Error writing log to mock DB:", error);
+    console.error("Error writing log to Firestore:", error);
   }
 
 

@@ -1,0 +1,38 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Users can read their own user document
+    match /users/{userId} {
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Rules for the 'routes' collection
+    match /routes/{routeId} {
+      // Allow create if the user is authenticated and the userId matches their own UID
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Allow read, update, delete only for the user who owns the route
+      allow read, update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Rules for the 'logs' collection
+    match /logs/{logId} {
+      // The backend (Firebase Admin SDK) can write logs. Clients can't.
+      allow create: if request.auth == null; 
+      
+      // Allow read only for the user who owns the logged route
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+
+      // Nobody can update or delete logs from the client
+      allow update, delete: if false;
+    }
+
+    // Public read for any other collection (if any) - adjust as needed
+    match /{document=**} {
+      allow read: if false;
+    }
+  }
+}

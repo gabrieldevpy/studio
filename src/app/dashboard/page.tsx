@@ -2,8 +2,10 @@
 "use client"
 import Link from "next/link"
 import { Plus, MoreHorizontal, BrainCircuit, CalendarIcon, LogOut, Crown, AlertCircle } from "lucide-react"
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
+
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -47,10 +49,11 @@ import {
 } from "@/components/ui/select"
 import { StealthEvolution } from "@/components/stealth-evolution";
 import withAuth from "@/components/with-auth";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useRouter } from "next/navigation";
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 type Route = {
@@ -58,26 +61,19 @@ type Route = {
   slug: string;
   realUrl: string;
   fakeUrl: string;
-  status: string;
+  status: string; // This might need to be derived or stored
   emergency: boolean;
   aiMode: boolean;
-  clicks: number;
-  realClicks: number;
-  fakeClicks: number;
+  clicks?: number; // These will be calculated
+  realClicks?: number;
+  fakeClicks?: number;
 };
 
-// Mock user plan and limits
+// Mock user plan and limits - in a real app, this would come from Firestore
 const userPlan = {
   name: "Iniciante",
   routeLimit: 5
 };
-
-const initialMockRoutes: Route[] = [
-  { id: '1', slug: 'promo-abc', realUrl: 'https://real-product.com/offer', fakeUrl: 'https://google.com', status: 'ativo', emergency: false, aiMode: true, clicks: 1204, realClicks: 980, fakeClicks: 224 },
-  { id: '2', slug: 'campaign-xyz', realUrl: 'https://another-real-one.com/page', fakeUrl: 'https://bing.com', status: 'ativo', emergency: true, aiMode: false, clicks: 873, realClicks: 650, fakeClicks: 223 },
-  { id: '3', slug: 'lander-v2', realUrl: 'https://my-affiliate-link.com/product', fakeUrl: 'https://duckduckgo.com', status: 'inativo', emergency: false, aiMode: true, clicks: 0, realClicks: 0, fakeClicks: 0 },
-  { id: '4', slug: 'facebook-ad-1', realUrl: 'https://secret-landing-page.io/special', fakeUrl: 'https://yahoo.com', status: 'ativo', emergency: false, aiMode: true, clicks: 5432, realClicks: 4987, fakeClicks: 445 },
-]
 
 const analyticsData = {
   "24h": [{ name: 'Real', value: 320 }, { name: 'Suspeito', value: 85 }],
@@ -91,11 +87,29 @@ const COLORS = {
 };
 
 function DashboardPage() {
-  const [routes, setRoutes] = React.useState(initialMockRoutes);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [routesLoading, setRoutesLoading] = useState(true);
   const [routeToDelete, setRouteToDelete] = React.useState<Route | null>(null);
   const [timeRange, setTimeRange] = React.useState<keyof typeof analyticsData>("7d")
-  const [user, loading] = useAuthState(auth);
+  const [user] = useAuthState(auth);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(collection(db, "routes"), where("userId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const routesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), status: 'ativo' } as Route));
+      setRoutes(routesData);
+      setRoutesLoading(false);
+    }, (error) => {
+      console.error("Error fetching routes: ", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar suas rotas." });
+      setRoutesLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const hasReachedLimit = routes.length >= userPlan.routeLimit;
 
@@ -104,40 +118,43 @@ function DashboardPage() {
     router.push('/login');
   };
 
-  const handleToggleChange = (id: string, field: 'emergency' | 'aiMode', checked: boolean) => {
-    const updatedRoutes = routes.map(route =>
-      route.id === id ? { ...route, [field]: checked } : route
-    );
-    setRoutes(updatedRoutes);
-    
-    const currentRoute = routes.find(r => r.id === id);
-    const fieldName = field === 'emergency' ? 'Modo de Emergência' : 'Modo IA';
-
-    toast({
-      title: `${fieldName} ${checked ? 'Ativado' : 'Desativado'}`,
-      description: `A rota /${currentRoute?.slug} foi atualizada.`,
-    });
-  };
-
-  const handleDeleteRoute = () => {
-    if (routeToDelete) {
-      setRoutes(routes.filter(route => route.id !== routeToDelete.id));
-      toast({
-        title: "Rota Excluída",
-        description: `A rota /${routeToDelete.slug} foi excluída com sucesso.`,
-      });
-      setRouteToDelete(null);
+  const handleToggleChange = async (id: string, field: 'emergency' | 'aiMode', checked: boolean) => {
+    const routeRef = doc(db, "routes", id);
+    try {
+        await updateDoc(routeRef, { [field]: checked });
+        const fieldName = field === 'emergency' ? 'Modo de Emergência' : 'Modo IA';
+        toast({
+            title: `${fieldName} ${checked ? 'Ativado' : 'Desativado'}`,
+            description: `A rota foi atualizada.`,
+        });
+    } catch (error) {
+        console.error("Error updating route: ", error);
+        toast({ variant: "destructive", title: "Erro", description: "Não foi possível atualizar a rota." });
     }
   };
 
+  const handleDeleteRoute = async () => {
+    if (routeToDelete) {
+        try {
+            await deleteDoc(doc(db, "routes", routeToDelete.id));
+            toast({
+                title: "Rota Excluída",
+                description: `A rota /${routeToDelete.slug} foi excluída com sucesso.`,
+            });
+            setRouteToDelete(null);
+        } catch (error) {
+            console.error("Error deleting route: ", error);
+            toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a rota." });
+        }
+    }
+  };
+  
   const handleBlockIp = (ip: string, slug: string) => {
-    // In a real app, this would update a Firestore document for the specific route.
-    console.log(`[Dashboard] Blocking IP ${ip} for route /${slug}.`);
+    console.log(`[Dashboard] Blocking IP ${ip} for route /${slug}. This should update the route doc in Firestore.`);
     toast({
       title: "IP Bloqueado pela IA",
       description: `O IP ${ip} foi adicionado à lista de bloqueio da rota /${slug}.`,
     });
-    // In a real app, you might want to add this to a global or route-specific blocklist state.
   };
 
   const currentData = analyticsData[timeRange];
@@ -288,50 +305,64 @@ function DashboardPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {routes.map((route) => (
-                    <TableRow key={route.id}>
-                      <TableCell>
-                        <Badge variant={route.status === 'ativo' ? 'default' : 'secondary'} className={route.status === 'ativo' ? 'bg-green-500/20 text-green-400 border-green-500/20' : ''}>{route.status}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium font-code">/{route.slug}</TableCell>
-                      <TableCell>
-                        <a href={route.realUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.realUrl}</a>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Switch 
-                          checked={route.aiMode} 
-                          onCheckedChange={(checked) => handleToggleChange(route.id, 'aiMode', checked)}
-                          aria-label="Modo IA" />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Switch 
-                          checked={route.emergency} 
-                          onCheckedChange={(checked) => handleToggleChange(route.id, 'emergency', checked)}
-                          aria-label="Modo de Emergência" 
-                          className="data-[state=checked]:bg-destructive" />
-                      </TableCell>
-                      <TableCell className="text-right">{route.clicks.toLocaleString('pt-BR')}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Alternar menu</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                            <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/logs`}>Ver Logs</Link></DropdownMenuItem>
-                            <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/edit`}>Editar</Link></DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => setRouteToDelete(route)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+                  {routesLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={7}>
+                          <Skeleton className="h-8 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : routes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-24 text-center">Nenhuma rota encontrada. Crie sua primeira rota!</TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    routes.map((route) => (
+                      <TableRow key={route.id}>
+                        <TableCell>
+                          <Badge variant={route.status === 'ativo' ? 'default' : 'secondary'} className={route.status === 'ativo' ? 'bg-green-500/20 text-green-400 border-green-500/20' : ''}>{route.status}</Badge>
+                        </TableCell>
+                        <TableCell className="font-medium font-code">/{route.slug}</TableCell>
+                        <TableCell>
+                          <a href={route.realUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.realUrl}</a>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Switch 
+                            checked={route.aiMode} 
+                            onCheckedChange={(checked) => handleToggleChange(route.id, 'aiMode', checked)}
+                            aria-label="Modo IA" />
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Switch 
+                            checked={route.emergency} 
+                            onCheckedChange={(checked) => handleToggleChange(route.id, 'emergency', checked)}
+                            aria-label="Modo de Emergência" 
+                            className="data-[state=checked]:bg-destructive" />
+                        </TableCell>
+                        <TableCell className="text-right">{(route.clicks || 0).toLocaleString('pt-BR')}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Alternar menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                              <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/logs`}>Ver Logs</Link></DropdownMenuItem>
+                              <DropdownMenuItem asChild><Link href={`/routes/${route.slug}/edit`}>Editar</Link></DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={() => setRouteToDelete(route)} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                Excluir
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

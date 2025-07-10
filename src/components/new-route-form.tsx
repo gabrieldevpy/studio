@@ -38,7 +38,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export function NewRouteForm() {
-  const { form, onSubmit, handleGenerateFakeUrl, isGenerating, applyTemplate, router } = useNewRouteForm();
+  const { form, onSubmit, handleGenerateFakeUrl, isGenerating, isSubmitting, applyTemplate, router } = useNewRouteForm();
   
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -411,8 +411,11 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="outline" type="button" onClick={() => router.push('/dashboard')}>Cancelar</Button>
-          <Button type="submit">Criar Rota</Button>
+          <Button variant="outline" type="button" onClick={() => router.push('/dashboard')} disabled={isSubmitting}>Cancelar</Button>
+          <Button type="submit" disabled={isSubmitting}>
+             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+             {isSubmitting ? 'Salvando...' : 'Criar Rota'}
+          </Button>
         </div>
       </form>
     </FormProvider>

@@ -1,9 +1,10 @@
 
 "use client"
 import Link from "next/link"
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { ArrowLeft, Search } from "lucide-react"
 import UAParser from "ua-parser-js"
+import { collection, query, where, orderBy, onSnapshot, getDocs } from "firebase/firestore"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -19,16 +20,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import withAuth from "@/components/with-auth"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { auth, db } from "@/lib/firebase"
+import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "@/hooks/use-toast"
 
-const mockLogs = [
-  { id: '1', ip: '123.45.67.89', country: 'Estados Unidos', dateTime: '2024-07-29 10:00:00 UTC', redirectedTo: 'real' as const, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36' },
-  { id: '2', ip: '98.76.54.32', country: 'Canadá', dateTime: '2024-07-29 10:01:15 UTC', redirectedTo: 'fake' as const, userAgent: 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)' },
-  { id: '3', ip: '203.0.113.55', country: 'Austrália', dateTime: '2024-07-29 10:02:30 UTC', redirectedTo: 'real' as const, userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1' },
-  { id: '4', ip: '198.51.100.12', country: 'Alemanha', dateTime: '2024-07-29 10:03:45 UTC', redirectedTo: 'real' as const, userAgent: 'Mozilla/5.0 (Linux; Android 13; SM-A536U) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36' },
-  { id: '5', ip: '8.8.8.8', country: 'Estados Unidos', dateTime: '2024-07-29 10:05:00 UTC', redirectedTo: 'fake' as const, userAgent: 'Googlebot/2.1 (+http://www.google.com/bot.html)' },
-  { id: '6', ip: '1.1.1.1', country: 'Austrália', dateTime: '2024-07-29 10:06:15 UTC', redirectedTo: 'fake' as const, userAgent: 'Mozilla/5.0 (compatible; AhrefsBot/7.0; +http://ahrefs.com/robot/)' },
-  { id: '7', ip: '123.45.67.90', country: 'Estados Unidos', dateTime: '2024-07-29 10:07:30 UTC', redirectedTo: 'real' as const, userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36' },
-]
+type LogEntry = {
+  id: string;
+  ip: string;
+  country: string;
+  timestamp: any; // Firestore timestamp object
+  redirectedTo: 'real' | 'fake';
+  userAgent: string;
+};
 
 const getDeviceInfo = (userAgent: string) => {
   const parser = new UAParser(userAgent);
@@ -43,9 +47,34 @@ const getDeviceInfo = (userAgent: string) => {
 
 function LogsPage({ params }: { params: { slug: string } }) {
   const [search, setSearch] = React.useState("")
-  const routeParams = React.use(params)
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user] = useAuthState(auth);
 
-  const filteredLogs = mockLogs.filter(log => log.ip.includes(search))
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, "logs"), 
+      where("slug", "==", params.slug),
+      where("userId", "==", user.uid), // Security: only get logs for the current user
+      orderBy("timestamp", "desc")
+    );
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const logsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as LogEntry));
+      setLogs(logsData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching logs: ", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar os logs." });
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, params.slug]);
+
+  const filteredLogs = logs.filter(log => log.ip.includes(search))
 
   return (
     <DashboardLayout>
@@ -60,7 +89,7 @@ function LogsPage({ params }: { params: { slug: string } }) {
           <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
             Logs de Acesso
           </h1>
-          <p className="text-muted-foreground text-sm">Mostrando logs para a rota: <span className="font-code text-foreground">/{routeParams.slug}</span></p>
+          <p className="text-muted-foreground text-sm">Mostrando logs para a rota: <span className="font-code text-foreground">/{params.slug}</span></p>
         </div>
       </div>
       <Card>
@@ -92,26 +121,36 @@ function LogsPage({ params }: { params: { slug: string } }) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLogs.map((log) => {
-                const { browser, os } = getDeviceInfo(log.userAgent);
-                return (
-                  <TableRow key={log.id}>
-                    <TableCell className="font-medium font-code">{log.ip}</TableCell>
-                    <TableCell>{log.country}</TableCell>
-                    <TableCell>
-                      <div className="font-medium">{browser}</div>
-                      <div className="text-xs text-muted-foreground">{os}</div>
-                    </TableCell>
-                    <TableCell>{log.dateTime}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant={log.redirectedTo === 'real' ? 'default' : 'destructive'} className={log.redirectedTo === 'real' ? 'bg-green-500/20 text-green-400 border-green-500/20' : ''}>
-                        {log.redirectedTo}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-              {filteredLogs.length === 0 && (
+              {loading ? (
+                 Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={5}>
+                          <Skeleton className="h-8 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+              ) : filteredLogs.length > 0 ? (
+                filteredLogs.map((log) => {
+                  const { browser, os } = getDeviceInfo(log.userAgent);
+                  const dateTime = log.timestamp?.toDate ? log.timestamp.toDate().toLocaleString('pt-BR') : 'Data inválida';
+                  return (
+                    <TableRow key={log.id}>
+                      <TableCell className="font-medium font-code">{log.ip}</TableCell>
+                      <TableCell>{log.country}</TableCell>
+                      <TableCell>
+                        <div className="font-medium">{browser}</div>
+                        <div className="text-xs text-muted-foreground">{os}</div>
+                      </TableCell>
+                      <TableCell>{dateTime}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant={log.redirectedTo === 'real' ? 'default' : 'destructive'} className={log.redirectedTo === 'real' ? 'bg-green-500/20 text-green-400 border-green-500/20' : ''}>
+                          {log.redirectedTo}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-24 text-center">
                     Nenhum log encontrado.

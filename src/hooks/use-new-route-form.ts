@@ -9,6 +9,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/hooks/use-toast";
 import { generateFakeUrl } from "@/ai/flows/generate-fake-url";
 import type { RouteTemplate } from "@/lib/route-templates";
+import { collection, addDoc } from "firebase/firestore";
+import { useAuthState } from "react-firebase-hooks/auth";
+import { auth, db } from "@/lib/firebase";
+
 
 const formSchema = z.object({
   slug: z.string().min(3, "O slug deve ter pelo menos 3 caracteres.").regex(/^[a-zA-Z0-9_-]+$/, "O slug pode conter apenas letras, números, hífens e sublinhados."),
@@ -30,6 +34,8 @@ type FormValues = z.infer<typeof formSchema>;
 
 export function useNewRouteForm() {
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [user] = useAuthState(auth);
   const router = useRouter();
 
   const form = useForm<FormValues>({
@@ -101,25 +107,46 @@ export function useNewRouteForm() {
   };
 
 
-  function onSubmit(values: FormValues) {
+  async function onSubmit(values: FormValues) {
+    if (!user) {
+      toast({ variant: "destructive", title: "Erro", description: "Você precisa estar logado para criar uma rota." });
+      return;
+    }
+
+    setIsSubmitting(true);
+    
     const finalValues = {
-        ...values,
-        realUrl: values.smartRotation ? values.realUrls.map(url => url.value) : values.realUrls[0].value,
+      ...values,
+      userId: user.uid,
+      createdAt: new Date(),
+      realUrl: values.smartRotation ? values.realUrls.map(url => url.value) : values.realUrls[0].value,
+      // Split textareas into arrays
+      blockedIps: values.blockedIps?.split('\n').filter(ip => ip.trim() !== '') || [],
+      blockedUserAgents: values.blockedUserAgents?.split('\n').filter(ua => ua.trim() !== '') || [],
     };
-    // remove single-item array properties for cleaner data
+    
     if (!values.smartRotation) {
         // @ts-ignore
         delete finalValues.realUrls;
-        // @ts-ignore
-        finalValues.realUrl = finalValues.realUrl[0] || '';
     }
 
-    console.log("Submitting:", finalValues);
-    toast({
-      title: "Rota Criada",
-      description: "Sua nova rota foi criada com sucesso.",
-    });
-    router.push("/dashboard");
+    try {
+      await addDoc(collection(db, "routes"), finalValues);
+      toast({
+        title: "Rota Criada!",
+        description: "Sua nova rota foi salva e está pronta para uso.",
+      });
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Error creating route: ", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao Salvar",
+        description: "Não foi possível criar a rota. Tente novamente.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return {
@@ -127,6 +154,7 @@ export function useNewRouteForm() {
     onSubmit,
     handleGenerateFakeUrl,
     isGenerating,
+    isSubmitting,
     applyTemplate,
     router
   };
