@@ -3,7 +3,7 @@
 import Link from "next/link"
 import React from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2, Bot } from "lucide-react"
+import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2, CreditCard } from "lucide-react"
 import {
   SidebarProvider,
   Sidebar,
@@ -88,6 +88,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <SidebarMenuButton href="/admin/settings" asChild isActive={isActive('/admin/settings')} tooltip="Configurações">
                  <Link href="/admin/settings"><Settings /><span>Configurações</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+             <SidebarMenuItem>
+              <SidebarMenuButton href="/admin/checkout" asChild isActive={isActive('/admin/checkout')} tooltip="Checkout">
+                 <Link href="/admin/checkout"><CreditCard /><span>Configurar Checkout</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>
