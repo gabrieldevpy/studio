@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Users, Search, MoreHorizontal, ShieldOff, Edit, Eye } from "lucide-react";
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { Users, Search, MoreHorizontal, ShieldOff, Edit, ShieldCheck, Loader2 } from "lucide-react";
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
 
 import withAuth from "@/components/with-auth";
 import { AdminLayout } from "@/components/admin-layout";
@@ -11,11 +11,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { db } from '@/lib/firebase';
 import { toast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 type User = {
     id: string;
@@ -30,13 +34,21 @@ function AdminUsersPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // State for modals
+    const [userToEdit, setUserToEdit] = useState<User | null>(null);
+    const [userToToggleStatus, setUserToToggleStatus] = useState<User | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    
+    // State for edit form
+    const [editName, setEditName] = useState('');
+    const [editPlan, setEditPlan] = useState<'Iniciante' | 'Pro' | 'Empresarial'>('Iniciante');
 
     useEffect(() => {
         const q = query(collection(db, "users"), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const usersData = querySnapshot.docs.map(doc => ({
                 id: doc.id,
-                status: 'active', // Placeholder
                 ...doc.data()
             } as User));
             setUsers(usersData);
@@ -50,9 +62,52 @@ function AdminUsersPage() {
         return () => unsubscribe();
     }, []);
 
+    const openEditModal = (user: User) => {
+        setUserToEdit(user);
+        setEditName(user.name);
+        setEditPlan(user.plan);
+    };
+
+    const handleSaveChanges = async () => {
+        if (!userToEdit) return;
+        setIsSaving(true);
+        try {
+            const userRef = doc(db, 'users', userToEdit.id);
+            await updateDoc(userRef, {
+                name: editName,
+                plan: editPlan,
+            });
+            toast({ title: "Sucesso", description: "Usuário atualizado com sucesso." });
+            setUserToEdit(null);
+        } catch (error) {
+            console.error("Error updating user:", error);
+            toast({ variant: "destructive", title: "Erro", description: "Não foi possível atualizar o usuário." });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleToggleStatus = async () => {
+        if (!userToToggleStatus) return;
+        setIsSaving(true);
+        const newStatus = userToToggleStatus.status === 'active' ? 'banned' : 'active';
+        try {
+             const userRef = doc(db, 'users', userToToggleStatus.id);
+             await updateDoc(userRef, { status: newStatus });
+             toast({ title: "Sucesso", description: `O status do usuário foi alterado para ${newStatus === 'active' ? 'ativo' : 'banido'}.` });
+             setUserToToggleStatus(null);
+        } catch (error) {
+            console.error("Error updating user status:", error);
+            toast({ variant: "destructive", title: "Erro", description: "Não foi possível alterar o status do usuário." });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+
     const filteredUsers = users.filter(user =>
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
@@ -126,10 +181,11 @@ function AdminUsersPage() {
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                    <DropdownMenuItem disabled><Eye className="mr-2 h-4 w-4" /> Ver Detalhes</DropdownMenuItem>
-                                                    <DropdownMenuItem disabled><Edit className="mr-2 h-4 w-4" /> Editar Usuário</DropdownMenuItem>
-                                                    <DropdownMenuItem disabled className="text-destructive focus:text-destructive">
-                                                        <ShieldOff className="mr-2 h-4 w-4" /> Banir Usuário
+                                                    <DropdownMenuItem onSelect={() => openEditModal(user)}><Edit className="mr-2 h-4 w-4" /> Editar Usuário</DropdownMenuItem>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onSelect={() => setUserToToggleStatus(user)} className={user.status === 'active' ? "text-destructive focus:text-destructive" : "text-green-500 focus:text-green-500"}>
+                                                        {user.status === 'active' ? <ShieldOff className="mr-2 h-4 w-4" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                                                        {user.status === 'active' ? 'Banir Usuário' : 'Reativar Usuário'}
                                                     </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
@@ -141,6 +197,74 @@ function AdminUsersPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+            {/* Edit User Dialog */}
+            <Dialog open={!!userToEdit} onOpenChange={(open) => !open && setUserToEdit(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Editar Usuário</DialogTitle>
+                        <DialogDescription>
+                            Altere as informações do usuário. Clique em salvar quando terminar.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="name" className="text-right">Nome</Label>
+                            <Input id="name" value={editName} onChange={(e) => setEditName(e.target.value)} className="col-span-3" />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="email" className="text-right">Email</Label>
+                            <Input id="email" value={userToEdit?.email || ''} disabled className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="plan" className="text-right">Plano</Label>
+                            <Select value={editPlan} onValueChange={(value: 'Iniciante' | 'Pro' | 'Empresarial') => setEditPlan(value)}>
+                                <SelectTrigger className="col-span-3">
+                                    <SelectValue placeholder="Selecione um plano" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Iniciante">Iniciante</SelectItem>
+                                    <SelectItem value="Pro">Pro</SelectItem>
+                                    <SelectItem value="Empresarial">Empresarial</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setUserToEdit(null)}>Cancelar</Button>
+                        <Button onClick={handleSaveChanges} disabled={isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Salvar Alterações
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Ban/Unban Confirmation Dialog */}
+             <AlertDialog open={!!userToToggleStatus} onOpenChange={(open) => !open && setUserToToggleStatus(null)}>
+                <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                       {userToToggleStatus?.status === 'active'
+                            ? `Isso impedirá o usuário ${userToToggleStatus?.email} de acessar o sistema.`
+                            : `Isso restaurará o acesso para o usuário ${userToToggleStatus?.email}.`
+                       }
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                        onClick={handleToggleStatus} 
+                        className={userToToggleStatus?.status === 'active' ? "bg-destructive hover:bg-destructive/90" : "bg-green-600 hover:bg-green-600/90"}
+                    >
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {userToToggleStatus?.status === 'active' ? "Sim, banir usuário" : "Sim, reativar usuário"}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
         </AdminLayout>
     );
 }
