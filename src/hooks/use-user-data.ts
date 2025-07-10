@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 type UserData = {
@@ -20,25 +20,23 @@ export function useUserData() {
     useEffect(() => {
         let unsubscribe: (() => void) | undefined;
 
-        const fetchUserData = async () => {
+        const fetchUserData = () => {
             if (user) {
                 const userRef = doc(db, 'users', user.uid);
-                try {
-                    const docSnap = await getDoc(userRef);
+                // Use onSnapshot to listen for real-time updates
+                unsubscribe = onSnapshot(userRef, (docSnap) => {
                     if (docSnap.exists()) {
                         setUserData(docSnap.data() as UserData);
                     } else {
-                        // O documento do usuário pode não existir imediatamente após o cadastro
-                        // Você pode querer criar um documento padrão aqui
                         console.log("No such user document!");
                         setUserData(null);
                     }
-                } catch (error) {
+                    setLoading(false);
+                }, (error) => {
                     console.error("Error fetching user data:", error);
                     setUserData(null);
-                } finally {
                     setLoading(false);
-                }
+                });
             } else {
                 setLoading(false);
                 setUserData(null);
@@ -47,6 +45,12 @@ export function useUserData() {
 
         fetchUserData();
 
+        // Cleanup the listener when the component unmounts or user changes
+        return () => {
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
     }, [user]);
 
     return { user, userData, loading };

@@ -1,40 +1,35 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
+
     // Helper function to check if a user is an admin
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.admin == true;
+    function isAdmin(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+             get(/databases/$(database)/documents/users/$(userId)).data.admin == true;
     }
-    
-    // Users can only be created by new users, or read/updated by themselves or admins
+
+    // Users can be created by anyone during signup
+    // They can only read/update their own document
     match /users/{userId} {
-      allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow create: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+      allow read, update: if request.auth.uid == userId || isAdmin(request.auth.uid);
+      // Admin can read all user documents
+      allow list: if isAdmin(request.auth.uid);
     }
     
-    // Routes can be read/written by their owner, or read by an admin
+    // Routes can be read/written only by the owner or an admin
     match /routes/{routeId} {
-      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
-      allow create, update, delete: if request.auth != null && request.data.userId == request.auth.uid;
+      allow read, create, update, delete: if request.auth.uid == request.resource.data.userId || isAdmin(request.auth.uid);
+      // Admin can list all routes
+      allow list: if isAdmin(request.auth.uid);
     }
-    
-    // Logs can be created by anyone (for the cloaking service)
-    // Logs can be read by their owner or an admin
+
+    // Anyone can write to logs, this is required for the cloaking endpoint to work
     match /logs/{logId} {
-      allow read: if (request.auth != null && resource.data.userId == request.auth.uid) || isAdmin();
       allow create: if true;
-    }
-
-    // Admins can list users and routes
-    match /users/{document=**} {
-      allow list: if isAdmin();
-    }
-
-    match /routes/{document=**} {
-      allow list: if isAdmin();
+      allow read, list: if request.auth != null && (exists(/databases/$(database)/documents/users/$(request.auth.uid))); // only logged-in users can read logs
     }
   }
 }

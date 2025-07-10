@@ -2,14 +2,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, getCountFromServer } from "firebase/firestore";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AdminLayout } from "@/components/admin-layout";
 import withAuth from "@/components/with-auth";
 import { Users, BarChart, FileText } from "lucide-react";
-import { db } from "@/lib/firebase";
 import { useUserData } from "@/hooks/use-user-data";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +20,7 @@ type User = {
   name: string;
   email: string;
   plan: string;
-  createdAt: any;
+  createdAt: any; 
   admin?: boolean;
 };
 
@@ -34,11 +32,15 @@ type Stats = {
   freePlans: number;
 };
 
+type AdminData = {
+    stats: Stats;
+    recentUsers: User[];
+}
+
 function AdminPage() {
   const { userData, loading: userLoading } = useUserData();
   const router = useRouter();
-  const [users, setUsers] = useState<User[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
@@ -48,6 +50,7 @@ function AdminPage() {
         setIsAuthorized(true);
       } else {
         setIsAuthorized(false);
+        setLoading(false);
       }
     }
   }, [userData, userLoading, router]);
@@ -57,32 +60,17 @@ function AdminPage() {
       const fetchAdminData = async () => {
         setLoading(true);
         try {
-          // Fetch Users
-          const usersSnapshot = await getDocs(collection(db, "users"));
-          const usersData = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-          setUsers(usersData);
-
-          // Fetch Stats
-          const usersCount = (await getCountFromServer(collection(db, "users"))).data().count;
-          const routesCount = (await getCountFromServer(collection(db, "routes"))).data().count;
-          
-          let proPlans = 0;
-          let basicPlans = 0;
-          let freePlans = 0;
-          usersData.forEach(user => {
-            if (user.plan === 'Pro') proPlans++;
-            else if (user.plan === 'Basic') basicPlans++;
-            else freePlans++;
-          });
-
-          setStats({
-            totalUsers: usersCount,
-            totalRoutes: routesCount,
-            proPlans,
-            basicPlans,
-            freePlans,
-          });
-
+          const response = await fetch('/api/admin/stats');
+          if (!response.ok) {
+            throw new Error('Failed to fetch admin data');
+          }
+          const data: AdminData = await response.json();
+          // Firestore Timestamps are serialized, so we need to convert them back
+          data.recentUsers = data.recentUsers.map(user => ({
+            ...user,
+            createdAt: user.createdAt ? new Date(user.createdAt._seconds * 1000) : new Date()
+          }));
+          setAdminData(data);
         } catch (error) {
           console.error("Error fetching admin data:", error);
            toast({
@@ -97,8 +85,6 @@ function AdminPage() {
       fetchAdminData();
     }
   }, [isAuthorized]);
-  
-  const recentUsers = users.sort((a,b) => b.createdAt?.toDate() - a.createdAt?.toDate()).slice(0, 5);
 
   if (userLoading || loading || isAuthorized === null) {
      return (
@@ -143,7 +129,7 @@ function AdminPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalUsers}</div>
+            <div className="text-2xl font-bold">{adminData?.stats?.totalUsers}</div>
           </CardContent>
         </Card>
         <Card>
@@ -152,8 +138,8 @@ function AdminPage() {
             <BarChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.proPlans || 0 + stats?.basicPlans || 0}</div>
-            <p className="text-xs text-muted-foreground">Pro: {stats?.proPlans || 0}, Basic: {stats?.basicPlans || 0}</p>
+            <div className="text-2xl font-bold">{(adminData?.stats?.proPlans || 0) + (adminData?.stats?.basicPlans || 0)}</div>
+            <p className="text-xs text-muted-foreground">Pro: {adminData?.stats?.proPlans || 0}, Basic: {adminData?.stats?.basicPlans || 0}</p>
           </CardContent>
         </Card>
         <Card>
@@ -162,7 +148,7 @@ function AdminPage() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats?.totalRoutes}</div>
+            <div className="text-2xl font-bold">{adminData?.stats?.totalRoutes}</div>
           </CardContent>
         </Card>
       </div>
@@ -185,7 +171,7 @@ function AdminPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentUsers.map((user) => (
+              {adminData?.recentUsers?.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
@@ -194,10 +180,10 @@ function AdminPage() {
                       {user.plan}
                     </Badge>
                   </TableCell>
-                  <TableCell>{user.createdAt?.toDate().toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>{user.createdAt?.toLocaleDateString('pt-BR')}</TableCell>
                 </TableRow>
               ))}
-               {recentUsers.length === 0 && (
+               {(adminData?.recentUsers?.length === 0) && (
                 <TableRow>
                   <TableCell colSpan={4} className="h-24 text-center">Nenhum usuário encontrado.</TableCell>
                 </TableRow>
