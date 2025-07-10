@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import React from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, FileText, Facebook, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -33,11 +33,13 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { toast } from "@/hooks/use-toast";
 import { generateFakeUrl } from "@/ai/flows/generate-fake-url";
 import { Switch } from "@/components/ui/switch";
+import { ROUTE_TEMPLATES, RouteTemplate } from "@/lib/route-templates";
+import { GoogleIcon, TikTokIcon } from "@/components/icons";
 
 const formSchema = z.object({
   slug: z.string().min(3, "O slug deve ter pelo menos 3 caracteres.").regex(/^[a-zA-Z0-9_-]+$/, "O slug pode conter apenas letras, números, hífens e sublinhados."),
-  realUrl: z.string().url("Por favor, insira uma URL válida."),
-  fakeUrl: z.string().url("Por favor, insira uma URL válida."),
+  realUrl: z.string().url("Por favor, insira uma URL válida.").or(z.literal('')),
+  fakeUrl: z.string().url("Por favor, insira uma URL válida.").or(z.literal('')),
   blockedIps: z.string().optional(),
   blockedUserAgents: z.string().optional(),
   allowedCountries: z.array(z.string()).optional(),
@@ -47,9 +49,12 @@ const formSchema = z.object({
   notes: z.string().optional(),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
+
 export function NewRouteForm() {
   const [isGenerating, setIsGenerating] = React.useState(false);
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       slug: "",
@@ -92,7 +97,23 @@ export function NewRouteForm() {
     }
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  const applyTemplate = (template: RouteTemplate) => {
+    const newValues: Partial<FormValues> = {
+      slug: template.slug,
+      blockedIps: template.blockedIps.join('\n'),
+      blockedUserAgents: template.blockedUserAgents.join('\n'),
+      allowedCountries: template.allowedCountries,
+      blockFacebookBots: template.blockFacebookBots,
+      enableEmergency: template.enableEmergency,
+    };
+    form.reset(newValues);
+    toast({
+      title: `Template "${template.name}" Aplicado`,
+      description: "Os campos do formulário foram preenchidos. Revise e complete o restante."
+    })
+  };
+
+  function onSubmit(values: FormValues) {
     console.log(values);
     toast({
       title: "Rota Criada",
@@ -102,6 +123,21 @@ export function NewRouteForm() {
 
   return (
     <Form {...form}>
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><FileText className="text-primary"/> Usar um Template</CardTitle>
+          <CardDescription>Comece rapidamente com configurações pré-definidas para as plataformas de anúncio mais populares.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {ROUTE_TEMPLATES.map((template) => (
+            <Button key={template.id} variant="outline" className="justify-start gap-3 h-12 text-base" onClick={() => applyTemplate(template)}>
+              {template.icon}
+              {template.name}
+            </Button>
+          ))}
+        </CardContent>
+      </Card>
+
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
