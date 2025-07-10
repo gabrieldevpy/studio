@@ -45,6 +45,7 @@ const formSchema = z.object({
   blockedCountries: z.array(z.string()).optional(),
   blockFacebookBots: z.boolean().default(true),
   enableEmergency: z.boolean().default(false),
+  notes: z.string().optional(),
 });
 
 export default function NewRoutePage() {
@@ -61,6 +62,7 @@ export default function NewRoutePage() {
       blockedCountries: [],
       blockFacebookBots: true,
       enableEmergency: true,
+      notes: "",
     },
   });
 
@@ -243,6 +245,33 @@ export default function NewRoutePage() {
                   />
                 </CardContent>
               </Card>
+               <Card>
+                  <CardHeader>
+                    <CardTitle>Observações</CardTitle>
+                    <CardDescription>
+                      Adicione notas internas para esta rota. Elas não serão visíveis publicamente.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Suas Notas</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Ex: Campanha de dia dos pais no Facebook, otimizada para..."
+                              className="min-h-32"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
             </div>
             <div className="space-y-8">
               <Card>

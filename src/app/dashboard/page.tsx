@@ -1,11 +1,13 @@
+
 "use client"
 import Link from "next/link"
-import { Plus, MoreHorizontal } from "lucide-react"
+import { Plus, MoreHorizontal, BarChart2, CalendarIcon } from "lucide-react"
 import React from "react"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,6 +37,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { DashboardTour } from "@/components/dashboard-tour"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 type Route = {
   id: string;
@@ -48,7 +57,6 @@ type Route = {
   fakeClicks: number;
 };
 
-
 const initialMockRoutes: Route[] = [
   { id: '1', slug: 'promo-abc', realUrl: 'https://real-product.com/offer', fakeUrl: 'https://google.com', status: 'ativo', emergency: false, clicks: 1204, realClicks: 980, fakeClicks: 224 },
   { id: '2', slug: 'campaign-xyz', realUrl: 'https://another-real-one.com/page', fakeUrl: 'https://bing.com', status: 'ativo', emergency: true, clicks: 873, realClicks: 650, fakeClicks: 223 },
@@ -56,9 +64,21 @@ const initialMockRoutes: Route[] = [
   { id: '4', slug: 'facebook-ad-1', realUrl: 'https://secret-landing-page.io/special', fakeUrl: 'https://yahoo.com', status: 'ativo', emergency: false, clicks: 5432, realClicks: 4987, fakeClicks: 445 },
 ]
 
+const analyticsData = {
+  "24h": [{ name: 'Real', value: 320 }, { name: 'Suspeito', value: 85 }],
+  "7d": [{ name: 'Real', value: 2450 }, { name: 'Suspeito', value: 680 }],
+  "30d": [{ name: 'Real', value: 9800 }, { name: 'Suspeito', value: 2100 }],
+}
+
+const COLORS = {
+  Real: '#22c55e',
+  Suspeito: '#ef4444',
+};
+
 export default function DashboardPage() {
   const [routes, setRoutes] = React.useState(initialMockRoutes);
   const [routeToDelete, setRouteToDelete] = React.useState<Route | null>(null);
+  const [timeRange, setTimeRange] = React.useState<keyof typeof analyticsData>("7d")
 
   const handleEmergencyChange = (id: string, checked: boolean) => {
     const updatedRoutes = routes.map(route =>
@@ -84,6 +104,8 @@ export default function DashboardPage() {
     }
   };
 
+  const currentData = analyticsData[timeRange];
+  const totalClicks = currentData.reduce((acc, entry) => acc + entry.value, 0);
 
   return (
     <DashboardLayout>
@@ -99,6 +121,79 @@ export default function DashboardPage() {
           </Link>
         </Button>
       </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Cliques Reais</CardTitle>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{currentData.find(d => d.name === 'Real')?.value.toLocaleString('pt-BR')}</div>
+            <p className="text-xs text-muted-foreground">vs {analyticsData['24h'].find(d => d.name === 'Real')?.value.toLocaleString('pt-BR')} (24h)</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Cliques Suspeitos</CardTitle>
+             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{currentData.find(d => d.name === 'Suspeito')?.value.toLocaleString('pt-BR')}</div>
+             <p className="text-xs text-muted-foreground">vs {analyticsData['24h'].find(d => d.name === 'Suspeito')?.value.toLocaleString('pt-BR')} (24h)</p>
+          </CardContent>
+        </Card>
+        <Card className="col-span-full lg:col-span-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Humanos vs. Bots</CardTitle>
+              <Select value={timeRange} onValueChange={(value) => setTimeRange(value as keyof typeof analyticsData)}>
+                <SelectTrigger className="h-7 w-[120px] text-xs">
+                  <CalendarIcon className="h-3 w-3 mr-1" />
+                  <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="24h">Últimas 24h</SelectItem>
+                  <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                  <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                </SelectContent>
+              </Select>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center p-0">
+             <ResponsiveContainer width="100%" height={120}>
+                <PieChart>
+                  <Pie
+                    data={currentData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={30}
+                    outerRadius={50}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="hsl(var(--background))"
+                    strokeWidth={3}
+                  >
+                    {currentData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    cursor={{ fill: 'hsl(var(--muted))' }}
+                    contentStyle={{ 
+                      background: 'hsl(var(--background))', 
+                      borderColor: 'hsl(var(--border))', 
+                      borderRadius: 'var(--radius)'
+                    }}
+                    formatter={(value, name) => [`${value} cliques`, name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+          </CardContent>
+           <CardFooter className="text-xs text-muted-foreground pt-4 pb-4 justify-center">
+              {totalClicks.toLocaleString('pt-BR')} cliques no total
+            </CardFooter>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Suas Rotas</CardTitle>
@@ -184,3 +279,5 @@ export default function DashboardPage() {
     </DashboardLayout>
   )
 }
+
+    
