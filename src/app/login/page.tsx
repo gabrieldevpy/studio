@@ -1,7 +1,7 @@
 
 "use client"
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/aut
 import { auth } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export default function LoginPage() {
@@ -20,6 +21,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,30 +83,45 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">Digite seu e-mail abaixo para fazer login em sua conta</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input id="email" type="email" placeholder="m@exemplo.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Senha</Label>
-                  <button type="button" onClick={handlePasswordReset} className="ml-auto inline-block text-sm underline">
-                    Esqueceu sua senha?
-                  </button>
+          {!isMounted ? (
+             <div className="grid gap-4">
+                <div className="grid gap-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
                 </div>
-                <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Login
-              </Button>
-              <Button variant="outline" className="w-full" disabled>
-                Login com Google
-              </Button>
+                <div className="grid gap-2">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
             </div>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit}>
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input id="email" type="email" placeholder="m@exemplo.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center">
+                    <Label htmlFor="password">Senha</Label>
+                    <button type="button" onClick={handlePasswordReset} className="ml-auto inline-block text-sm underline">
+                      Esqueceu sua senha?
+                    </button>
+                  </div>
+                  <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Login
+                </Button>
+                <Button variant="outline" className="w-full" disabled>
+                  Login com Google
+                </Button>
+              </div>
+            </form>
+          )}
           <div className="mt-4 text-center text-sm">
             Não tem uma conta?{" "}
             <Link href="/signup" className="underline">
