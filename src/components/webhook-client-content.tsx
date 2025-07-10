@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Check, Clipboard, Webhook } from "lucide-react";
+import { Check, Clipboard, Webhook, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const CodeBlock = ({ text }: { text: string }) => {
@@ -36,8 +36,11 @@ const CodeBlock = ({ text }: { text: string }) => {
 
 export default function WebhookClientContent() {
     const [webhookUrl, setWebhookUrl] = useState("");
+    const [isSaving, setIsSaving] = useState(false);
+    const [isTesting, setIsTesting] = useState(false);
 
     const handleSave = () => {
+        setIsSaving(true);
         if (webhookUrl && (webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://hooks.slack.com/"))) {
             console.log("Saving Webhook URL:", webhookUrl);
             toast({
@@ -50,6 +53,59 @@ export default function WebhookClientContent() {
                 title: "URL Inválida",
                 description: "Por favor, insira uma URL de webhook válida (Discord ou Slack).",
             });
+        }
+        setIsSaving(false);
+    };
+    
+    const handleTestWebhook = async () => {
+        if (!webhookUrl || !(webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://hooks.slack.com/"))) {
+            toast({
+                variant: "destructive",
+                title: "URL Inválida",
+                description: "Por favor, salve uma URL de webhook válida antes de testar.",
+            });
+            return;
+        }
+
+        setIsTesting(true);
+
+        const testPayload = {
+            username: "CloakDash Teste",
+            avatar_url: "https://i.imgur.com/4M34hi2.png",
+            content: "Se você recebeu esta mensagem, seu webhook está funcionando!",
+            embeds: [{
+                title: "✅ Notificação de Teste",
+                color: 5763719, // Verde
+                description: "Esta é uma mensagem de teste do CloakDash para confirmar que sua configuração de webhook está correta.",
+                timestamp: new Date().toISOString()
+            }]
+        };
+
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(testPayload)
+            });
+
+            if (response.ok) {
+                 toast({
+                    title: "Teste Enviado!",
+                    description: "A notificação de teste foi enviada com sucesso para o seu webhook.",
+                });
+            } else {
+                throw new Error(`O servidor respondeu com o status ${response.status}`);
+            }
+
+        } catch (error) {
+            console.error("Webhook test failed:", error);
+            toast({
+                variant: "destructive",
+                title: "Falha no Teste",
+                description: "Não foi possível enviar a notificação. Verifique a URL do webhook e as permissões do seu servidor.",
+            });
+        } finally {
+            setIsTesting(false);
         }
     };
 
@@ -79,8 +135,15 @@ export default function WebhookClientContent() {
                                 </p>
                             </div>
                         </CardContent>
-                        <CardFooter>
-                            <Button onClick={handleSave}>Salvar Webhook</Button>
+                        <CardFooter className="gap-2">
+                            <Button onClick={handleSave} disabled={isSaving}>
+                                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                Salvar
+                            </Button>
+                             <Button variant="outline" onClick={handleTestWebhook} disabled={isTesting}>
+                                {isTesting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                Enviar Teste
+                            </Button>
                         </CardFooter>
                     </Card>
                 </div>
