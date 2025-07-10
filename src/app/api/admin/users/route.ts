@@ -48,8 +48,22 @@ export async function GET(request: NextRequest) {
 
   try {
     const usersSnapshot = await db.collection('users').orderBy('createdAt', 'desc').get();
-    const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Fetch all admins to mark them in the user list
+    const adminsSnapshot = await db.collection('admins').get();
+    const adminIds = new Set(adminsSnapshot.docs.map(doc => doc.id));
+    
+    const users = usersSnapshot.docs.map(doc => {
+      const userData = doc.data();
+      return { 
+        id: doc.id, 
+        ...userData,
+        admin: adminIds.has(doc.id)
+      };
+    });
+
     return NextResponse.json(users);
+
   } catch (dbError) {
     console.error('Error fetching all users:', dbError);
     return new NextResponse(JSON.stringify({ error: 'Internal Server Error', details: 'Failed to fetch users from database.' }), { 
