@@ -4,7 +4,7 @@ import Link from "next/link"
 import { Plus, MoreHorizontal, CalendarIcon, Crown, AlertCircle } from "lucide-react"
 import React, { useEffect, useState } from "react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
 
 
 import { Badge } from "@/components/ui/badge"
@@ -53,7 +53,7 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { useRouter } from "next/navigation";
 import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-
+import { useUserData } from "@/hooks/use-user-data";
 
 type Route = {
   id: string;
@@ -68,17 +68,18 @@ type Route = {
   fakeClicks?: number;
 };
 
-// Mock user plan and limits - in a real app, this would come from Firestore
-const userPlan = {
-  name: "Iniciante",
-  routeLimit: 5
+type Log = {
+  id: string;
+  redirectedTo: 'real' | 'fake';
+  timestamp: Timestamp;
 };
 
-const analyticsData = {
-  "24h": [{ name: 'Real', value: 320 }, { name: 'Suspeito', value: 85 }],
-  "7d": [{ name: 'Real', value: 2450 }, { name: 'Suspeito', value: 680 }],
-  "30d": [{ name: 'Real', value: 9800 }, { name: 'Suspeito', value: 2100 }],
-}
+type AnalyticsData = {
+  real: number;
+  suspicious: number;
+};
+
+type TimeRange = '24h' | '7d' | '30d';
 
 const COLORS = {
   Real: '#22c55e',
@@ -89,10 +90,25 @@ function DashboardPage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [routesLoading, setRoutesLoading] = useState(true);
   const [routeToDelete, setRouteToDelete] = React.useState<Route | null>(null);
-  const [timeRange, setTimeRange] = React.useState<keyof typeof analyticsData>("7d")
-  const [user] = useAuthState(auth);
+  const [timeRange, setTimeRange] = React.useState<TimeRange>("7d")
+  const { user, userData } = useUserData();
   const router = useRouter();
+  
+  const [analytics, setAnalytics] = useState<Record<TimeRange, AnalyticsData>>({
+    '24h': { real: 0, suspicious: 0 },
+    '7d': { real: 0, suspicious: 0 },
+    '30d': { real: 0, suspicious: 0 },
+  });
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
+  // User Plan Data
+  const userPlan = {
+    name: userData?.plan || "Iniciante",
+    routeLimit: userData?.plan === "Pro" ? 50 : (userData?.plan === "Empresarial" ? Infinity : 5)
+  };
+  const hasReachedLimit = routes.length >= userPlan.routeLimit;
+
+  // Fetch routes
   useEffect(() => {
     if (!user) return;
 
@@ -109,8 +125,42 @@ function DashboardPage() {
 
     return () => unsubscribe();
   }, [user]);
+  
+  // Fetch logs and calculate analytics
+  useEffect(() => {
+    if (!user) return;
+    setAnalyticsLoading(true);
 
-  const hasReachedLimit = routes.length >= userPlan.routeLimit;
+    const q = query(collection(db, "logs"), where("userId", "==", user.uid));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const logs = snapshot.docs.map(doc => doc.data() as Log);
+      const now = new Date();
+
+      const calculateStats = (days: number): AnalyticsData => {
+        const threshold = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+        const filteredLogs = logs.filter(log => log.timestamp.toDate() >= threshold);
+        
+        return filteredLogs.reduce((acc, log) => {
+          if (log.redirectedTo === 'real') acc.real++;
+          else acc.suspicious++;
+          return acc;
+        }, { real: 0, suspicious: 0 });
+      };
+
+      setAnalytics({
+        '24h': calculateStats(1),
+        '7d': calculateStats(7),
+        '30d': calculateStats(30),
+      });
+      setAnalyticsLoading(false);
+    }, (error) => {
+      console.error("Error fetching analytics logs:", error);
+      toast({ variant: "destructive", title: "Erro", description: "Não foi possível carregar as estatísticas." });
+      setAnalyticsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [user]);
 
   const handleToggleChange = async (routeId: string, field: 'emergency' | 'aiMode', checked: boolean) => {
     if (!routeId) {
@@ -121,9 +171,6 @@ function DashboardPage() {
     try {
         await updateDoc(routeRef, { [field]: checked });
         
-        // Optimistic update
-        setRoutes(prevRoutes => prevRoutes.map(r => r.id === routeId ? {...r, [field]: checked} : r));
-
         const fieldName = field === 'emergency' ? 'Modo de Emergência' : 'Modo IA';
         toast({
             title: `${fieldName} ${checked ? 'Ativado' : 'Desativado'}`,
@@ -131,8 +178,6 @@ function DashboardPage() {
         });
     } catch (error) {
         console.error("Error updating route: ", error);
-        // Revert optimistic update on error
-        setRoutes(prevRoutes => prevRoutes.map(r => r.id === routeId ? {...r, [field]: !checked} : r));
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível atualizar a rota." });
     }
   };
@@ -142,29 +187,25 @@ function DashboardPage() {
          toast({ variant: "destructive", title: "Erro", description: "Nenhuma rota selecionada para exclusão." });
         return;
     }
-
-    const routeIdToDelete = routeToDelete.id;
-    const originalRoutes = routes;
-    
-    // Optimistic update
-    setRoutes(prevRoutes => prevRoutes.filter(r => r.id !== routeIdToDelete));
-    setRouteToDelete(null);
     
     try {
-        await deleteDoc(doc(db, "routes", routeIdToDelete));
+        await deleteDoc(doc(db, "routes", routeToDelete.id));
         toast({
             title: "Rota Excluída",
             description: `A rota /${routeToDelete.slug} foi excluída com sucesso.`,
         });
+        setRouteToDelete(null);
     } catch (error) {
         console.error("Error deleting route: ", error);
-        setRoutes(originalRoutes); // Revert on error
         toast({ variant: "destructive", title: "Erro", description: "Não foi possível excluir a rota." });
     }
   };
   
-  const currentData = analyticsData[timeRange];
-  const totalClicks = currentData.reduce((acc, entry) => acc + entry.value, 0);
+  const currentDataForChart = [
+    { name: 'Real', value: analytics[timeRange].real },
+    { name: 'Suspeito', value: analytics[timeRange].suspicious },
+  ];
+  const totalClicksForChart = currentDataForChart.reduce((acc, entry) => acc + entry.value, 0);
   
   const CreateRouteButton = () => (
     <Button asChild id="tour-step-2" disabled={hasReachedLimit}>
@@ -211,28 +252,28 @@ function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cliques Reais</CardTitle>
+            <CardTitle className="text-sm font-medium">Cliques Reais ({timeRange})</CardTitle>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentData.find(d => d.name === 'Real')?.value.toLocaleString('pt-BR')}</div>
-            <p className="text-xs text-muted-foreground">vs {analyticsData['24h'].find(d => d.name === 'Real')?.value.toLocaleString('pt-BR')} (24h)</p>
+            {analyticsLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold">{analytics[timeRange].real.toLocaleString('pt-BR')}</div>}
+            <p className="text-xs text-muted-foreground">vs {analytics['24h'].real.toLocaleString('pt-BR')} (24h)</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cliques Suspeitos</CardTitle>
+            <CardTitle className="text-sm font-medium">Cliques Suspeitos ({timeRange})</CardTitle>
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 text-muted-foreground"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{currentData.find(d => d.name === 'Suspeito')?.value.toLocaleString('pt-BR')}</div>
-             <p className="text-xs text-muted-foreground">vs {analyticsData['24h'].find(d => d.name === 'Suspeito')?.value.toLocaleString('pt-BR')} (24h)</p>
+            {analyticsLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold">{analytics[timeRange].suspicious.toLocaleString('pt-BR')}</div>}
+             <p className="text-xs text-muted-foreground">vs {analytics['24h'].suspicious.toLocaleString('pt-BR')} (24h)</p>
           </CardContent>
         </Card>
         <Card className="col-span-full lg:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Humanos vs. Bots</CardTitle>
-              <Select value={timeRange} onValueChange={(value) => setTimeRange(value as keyof typeof analyticsData)}>
+              <Select value={timeRange} onValueChange={(value) => setTimeRange(value as TimeRange)}>
                 <SelectTrigger className="h-7 w-[120px] text-xs">
                   <CalendarIcon className="h-3 w-3 mr-1" />
                   <SelectValue placeholder="Período" />
@@ -245,10 +286,11 @@ function DashboardPage() {
               </Select>
           </CardHeader>
           <CardContent className="flex items-center justify-center p-0">
+             {analyticsLoading ? <Skeleton className="h-[120px] w-full" /> : 
              <ResponsiveContainer width="100%" height={120}>
                 <PieChart>
                   <Pie
-                    data={currentData}
+                    data={currentDataForChart}
                     cx="50%"
                     cy="50%"
                     innerRadius={30}
@@ -258,7 +300,7 @@ function DashboardPage() {
                     stroke="hsl(var(--background))"
                     strokeWidth={3}
                   >
-                    {currentData.map((entry, index) => (
+                    {currentDataForChart.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS]} />
                     ))}
                   </Pie>
@@ -273,9 +315,10 @@ function DashboardPage() {
                   />
                 </PieChart>
               </ResponsiveContainer>
+              }
           </CardContent>
            <CardFooter className="text-xs text-muted-foreground pt-4 pb-4 justify-center">
-              {totalClicks.toLocaleString('pt-BR')} cliques no total
+              {analyticsLoading ? <Skeleton className="h-4 w-32" /> : `${totalClicksForChart.toLocaleString('pt-BR')} cliques no total`}
             </CardFooter>
         </Card>
       </div>
@@ -291,7 +334,7 @@ function DashboardPage() {
                     </div>
                     <div className="text-right">
                         <p className="text-sm font-medium text-muted-foreground">Uso de Rotas</p>
-                        <p className="text-lg font-bold">{routes.length}<span className="text-base font-normal text-muted-foreground">/{userPlan.routeLimit}</span></p>
+                        <p className="text-lg font-bold">{routes.length}<span className="text-base font-normal text-muted-foreground">/{userPlan.routeLimit === Infinity ? '∞' : userPlan.routeLimit}</span></p>
                     </div>
                 </div>
             </CardHeader>
@@ -331,7 +374,7 @@ function DashboardPage() {
                         </TableCell>
                         <TableCell className="font-medium font-code">/{route.slug}</TableCell>
                         <TableCell>
-                          <a href={route.realUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{route.realUrl}</a>
+                          <a href={Array.isArray(route.realUrl) ? route.realUrl[0] : route.realUrl} target="_blank" rel="noopener noreferrer" className="hover:underline truncate max-w-xs block">{Array.isArray(route.realUrl) ? `${route.realUrl[0]} (+${route.realUrl.length - 1})` : route.realUrl}</a>
                         </TableCell>
                         <TableCell className="text-center">
                           <Switch 
