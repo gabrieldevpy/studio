@@ -13,6 +13,19 @@ import { useUserData } from "@/hooks/use-user-data";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { updateDoc, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
 
 type Plan = {
     name: "Iniciante" | "Pro" | "Empresarial";
@@ -31,6 +44,7 @@ function SettingsPage() {
   const router = useRouter();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isChangingPlan, setIsChangingPlan] = useState<string | null>(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   useEffect(() => {
     if (userData) {
@@ -137,6 +151,36 @@ function SettingsPage() {
     }
   };
 
+  const handleManageBilling = () => {
+    toast({
+        title: "Portal de Faturamento",
+        description: "Em um aplicativo real, isso o levaria para o portal de faturamento do Stripe.",
+    });
+  }
+
+  const handleCancelSubscription = async () => {
+    if (!user) return;
+    
+    setShowCancelDialog(false);
+    
+    // Simulate canceling by downgrading to the free/starter plan
+    const userRef = doc(db, "users", user.uid);
+    try {
+        await updateDoc(userRef, { plan: 'Iniciante' });
+        toast({
+            title: "Assinatura Cancelada",
+            description: "Sua assinatura foi cancelada e seu plano foi alterado para Iniciante."
+        });
+        router.refresh(); // Reload data
+    } catch(error) {
+        toast({
+            variant: "destructive",
+            title: "Erro",
+            description: "Não foi possível cancelar sua assinatura. Tente novamente."
+        });
+    }
+  };
+
   const currentPlanDetails = plans.find(p => p.isCurrent);
   
   if (userLoading || plans.length === 0) {
@@ -197,8 +241,8 @@ function SettingsPage() {
                 </div>
             </CardContent>
              <CardFooter className="flex-wrap gap-2">
-                <Button disabled>Gerenciar Faturamento (Stripe)</Button>
-                <Button variant="outline" disabled>Cancelar Assinatura</Button>
+                <Button onClick={handleManageBilling} disabled={currentPlanDetails?.name === "Iniciante"}>Gerenciar Faturamento</Button>
+                <Button variant="outline" onClick={() => setShowCancelDialog(true)} disabled={currentPlanDetails?.name === "Iniciante"}>Cancelar Assinatura</Button>
             </CardFooter>
         </Card>
 
@@ -262,6 +306,23 @@ function SettingsPage() {
             )
         })}
       </div>
+
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação cancelará sua assinatura paga e mudará seu plano para o "Iniciante" ao final do ciclo de faturamento atual. Você pode perder o acesso aos recursos do plano Pro.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancelSubscription} className="bg-destructive hover:bg-destructive/90">
+              Sim, cancelar assinatura
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </DashboardLayout>
   );

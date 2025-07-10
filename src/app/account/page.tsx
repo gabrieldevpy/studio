@@ -9,32 +9,37 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { useAuthState, useUpdateProfile, useUpdatePassword } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
 import { Loader2 } from "lucide-react";
 
 function AccountSettingsPage() {
     const [user] = useAuthState(auth);
+    const [updateProfile, updatingProfile, errorProfile] = useUpdateProfile(auth);
+    const [updatePassword, updatingPassword, errorPassword] = useUpdatePassword(auth);
+    
     const [displayName, setDisplayName] = useState(user?.displayName || "");
-    const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
-    const [loading, setLoading] = useState(false);
 
-    const handleUpdateProfile = () => {
-        setLoading(true);
-        // Em um app real, você chamaria updateProfile do Firebase aqui
-        console.log("Updating profile with name:", displayName);
-        setTimeout(() => {
+    const handleUpdateProfile = async () => {
+        if (displayName === user?.displayName) return;
+        const success = await updateProfile({ displayName });
+        if (success) {
             toast({
                 title: "Perfil Atualizado",
                 description: "Seu nome foi atualizado com sucesso.",
             });
-            setLoading(false);
-        }, 1000);
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Erro",
+                description: errorProfile?.message || "Não foi possível atualizar o perfil.",
+            });
+        }
     };
     
-    const handleUpdatePassword = () => {
+    const handleUpdatePassword = async () => {
         if (newPassword !== confirmPassword) {
             toast({
                 variant: "destructive",
@@ -52,21 +57,24 @@ function AccountSettingsPage() {
             return;
         }
 
-        setLoading(true);
-        // Em um app real, você chamaria reauthenticateWithCredential e updatePassword do Firebase
-        console.log("Updating password...");
-        setTimeout(() => {
+        const success = await updatePassword(newPassword);
+        if (success) {
             toast({
                 title: "Senha Atualizada",
-                description: "Sua senha foi alterada com sucesso.",
+                description: "Sua senha foi alterada com sucesso. Você pode precisar fazer login novamente.",
             });
-            setCurrentPassword("");
             setNewPassword("");
             setConfirmPassword("");
-            setLoading(false);
-        }, 1500);
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Erro",
+                description: errorPassword?.message || "Não foi possível atualizar a senha. Tente fazer logout e login novamente.",
+            });
+        }
     };
 
+    const loading = updatingProfile || updatingPassword;
 
   return (
     <DashboardLayout>
@@ -105,10 +113,6 @@ function AccountSettingsPage() {
                 <CardDescription>Para sua segurança, escolha uma senha forte.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Senha Atual</Label>
-                    <Input id="currentPassword" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-                </div>
                 <div className="space-y-2">
                     <Label htmlFor="newPassword">Nova Senha</Label>
                     <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
