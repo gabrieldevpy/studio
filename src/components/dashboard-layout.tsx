@@ -21,7 +21,7 @@ import { useUserData } from "@/hooks/use-user-data"
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { userData } = useUserData();
+  const { isAdmin } = useUserData();
   const isActive = (path: string) => pathname === path
   
   return (
@@ -35,7 +35,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </SidebarHeader>
           <SidebarMenu>
-            {userData?.admin && (
+            {isAdmin && (
                <SidebarMenuItem>
                 <SidebarMenuButton href="/admin" asChild isActive={pathname.startsWith('/admin')} tooltip="Admin">
                     <Link href="/admin"><Shield /><span>Admin</span></Link>

@@ -23,7 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, userData, loading: userLoading } = useUserData();
+  const { user, userData, isAdmin, loading: userLoading } = useUserData();
   const isActive = (path: string) => pathname === path
 
   const handleRedirectToLogin = () => {
@@ -39,8 +39,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // After loading, if user is not logged in or userData is null (or not admin), deny access.
-  if (!user || !userData?.admin) {
+  // After loading, if user is not logged in or is not an admin, deny access.
+  if (!user || !isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background p-4">
         <Alert variant="destructive" className="max-w-md">

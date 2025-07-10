@@ -26,18 +26,17 @@ export function SignupForm() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Atualizar o perfil do usuário no Firebase Auth
+      // Update user profile in Firebase Auth
       await updateProfile(user, {
         displayName: fullName,
       });
 
-      // Criar um documento para o usuário no Firestore
+      // Create a document for the user in Firestore
       await setDoc(doc(db, "users", user.uid), {
         name: fullName,
         email: email,
         createdAt: new Date(),
-        plan: "Iniciante", // Plano padrão
-        admin: email.toLowerCase() === "gsommer782@gmail.com"
+        plan: "Iniciante", // Default plan
       });
 
       toast({
@@ -59,7 +58,8 @@ export function SignupForm() {
         setTimeout(() => {
           router.push('/login');
         }, 2000);
-        return; // Retorna para não exibir o toast padrão no finally
+        setLoading(false); // Stop loading here
+        return; 
       } else if (error.code === 'auth/weak-password') {
         description = "Sua senha é muito fraca. Ela deve ter pelo menos 6 caracteres.";
       }

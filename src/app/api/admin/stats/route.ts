@@ -9,16 +9,16 @@ async function verifyAdmin(idToken: string): Promise<{ isAdmin: boolean; uid: st
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const uid = decodedToken.uid;
 
-    const userDoc = await db.collection('users').doc(uid).get();
+    // Check the 'admins' collection instead of the 'users' collection field
+    const adminDoc = await db.collection('admins').doc(uid).get();
 
-    if (!userDoc.exists || !userDoc.data()?.admin) {
+    if (!adminDoc.exists || adminDoc.data()?.role !== 'admin') {
       return { isAdmin: false, uid, error: 'User is not an admin.' };
     }
 
     return { isAdmin: true, uid };
   } catch (error: any) {
     console.error('Error verifying admin token:', error.code, error.message);
-    // Return a specific error message based on the error code
     if (error.code === 'auth/id-token-expired') {
       return { isAdmin: false, uid: null, error: 'Token has expired.' };
     }
