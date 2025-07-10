@@ -4,8 +4,8 @@
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import React, { useEffect, useState } from 'react';
-import { doc, getDoc } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -101,9 +101,5 @@ function EditRoutePage({ params }: { params: { slug: string } }) {
     </DashboardLayout>
   );
 }
-
-// We need to import these here to avoid a server/client component boundary error
-// when using them inside the useEffect hook above.
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
 
 export default withAuth(EditRoutePage);

@@ -9,6 +9,7 @@ import { Check, Clipboard, Mail } from "lucide-react";
 import withAuth from "@/components/with-auth";
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
+import { Label } from "@/components/ui/label";
 
 const CodeBlock = ({ text, title }: { text: string, title: string }) => {
     const [copied, setCopied] = useState(false);

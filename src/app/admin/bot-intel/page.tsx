@@ -4,14 +4,13 @@
 import { useEffect, useState } from "react";
 import { AdminLayout } from "@/components/admin-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Bot, Timer, Server, Shield, Loader2 } from "lucide-react";
+import { Bot, Loader2 } from "lucide-react";
 import withAuth from "@/components/with-auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
-import type { BotIntelData, GlobalBlocklists } from "@/lib/types";
+import type { GlobalBlocklists } from "@/lib/types";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth } from "@/lib/firebase";
-import { getBotIntelData } from "@/lib/bot-intel"; // To show the combined list
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -34,7 +33,7 @@ const ListCard = ({ title, items, emptyText }: { title: string; items: string[];
 
 function AdminBotIntelPage() {
     const [authUser] = useAuthState(auth);
-    const [fullIntelData, setFullIntelData] = useState<BotIntelData | null>(null);
+    const [combinedIntelData, setCombinedIntelData] = useState<GlobalBlocklists | null>(null);
     const [adminLists, setAdminLists] = useState<GlobalBlocklists>({ blockedIps: [], blockedUserAgents: [], blockedAsns: [] });
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -45,15 +44,23 @@ function AdminBotIntelPage() {
         const fetchAllData = async () => {
             try {
                 setLoading(true);
-                const [intelData, idToken] = await Promise.all([getBotIntelData(), authUser.getIdToken()]);
-                setFullIntelData(intelData);
+                const idToken = await authUser.getIdToken();
+                
+                // Fetch combined lists for display and admin-only lists for editing
+                const [combinedRes, adminRes] = await Promise.all([
+                    fetch('/api/bot-intel'), // Public endpoint for combined data
+                    fetch('/api/admin/bot-intel', { // Admin endpoint for editable data
+                        headers: { Authorization: `Bearer ${idToken}` }
+                    })
+                ]);
 
-                const response = await fetch('/api/admin/bot-intel', {
-                    headers: { Authorization: `Bearer ${idToken}` }
-                });
+                if (!combinedRes.ok) throw new Error('Falha ao buscar a lista combinada de inteligência.');
+                if (!adminRes.ok) throw new Error('Falha ao buscar as listas de admin.');
 
-                if (!response.ok) throw new Error('Falha ao buscar listas de admin');
-                const adminData: GlobalBlocklists = await response.json();
+                const combinedData: GlobalBlocklists = await combinedRes.json();
+                const adminData: GlobalBlocklists = await adminRes.json();
+                
+                setCombinedIntelData(combinedData);
                 setAdminLists(adminData);
 
             } catch (error) {
@@ -71,9 +78,10 @@ function AdminBotIntelPage() {
     }, [authUser]);
     
     const handleSave = async () => {
+        if (!authUser) return;
         setIsSaving(true);
         try {
-            const idToken = await authUser?.getIdToken();
+            const idToken = await authUser.getIdToken();
             if (!idToken) throw new Error("Usuário não autenticado");
 
             const response = await fetch('/api/admin/bot-intel', {
@@ -92,8 +100,9 @@ function AdminBotIntelPage() {
                 description: "Suas listas de bloqueio globais foram salvas com sucesso.",
             });
             // Refetch data to show combined lists correctly
-            const intelData = await getBotIntelData();
-            setFullIntelData(intelData);
+            const combinedRes = await fetch('/api/bot-intel');
+            const combinedData = await combinedRes.json();
+            setCombinedIntelData(combinedData);
 
         } catch (error: any) {
             toast({
@@ -126,34 +135,34 @@ function AdminBotIntelPage() {
             <p className="text-muted-foreground mb-6"> Status e gerenciamento das listas de bloqueio globais. Regras aqui são aplicadas a todas as rotas. </p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <ListCard title="IPs Bloqueados" items={fullIntelData?.blockedIps || []} emptyText="Nenhum IP na lista global." />
-                <ListCard title="User-Agents Bloqueados" items={fullIntelData?.blockedUserAgents || []} emptyText="Nenhum User-Agent na lista global." />
-                <ListCard title="ASNs Bloqueados" items={fullIntelData?.blockedAsns || []} emptyText="Nenhuma ASN na lista global." />
+                <ListCard title="IPs Bloqueados (Total)" items={combinedIntelData?.blockedIps || []} emptyText="Nenhum IP na lista global." />
+                <ListCard title="User-Agents Bloqueados (Total)" items={combinedIntelData?.blockedUserAgents || []} emptyText="Nenhum User-Agent na lista global." />
+                <ListCard title="ASNs Bloqueados (Total)" items={combinedIntelData?.blockedAsns || []} emptyText="Nenhuma ASN na lista global." />
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Gerenciar Listas de Bloqueio Globais</CardTitle>
-                    <CardDescription>Adicione suas próprias regras que serão aplicadas a todas as suas rotas. Insira um valor por linha.</CardDescription>
+                    <CardTitle>Gerenciar Listas de Bloqueio Adicionais</CardTitle>
+                    <CardDescription>Adicione suas próprias regras que serão aplicadas a todas as suas rotas, em adição à lista padrão. Insira um valor por linha.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                        <Label htmlFor="admin-ips">IPs para Bloquear</Label>
+                        <Label htmlFor="admin-ips">Seus IPs para Bloquear</Label>
                         <Textarea id="admin-ips" className="min-h-48 font-code" placeholder="1.2.3.4&#10;192.168.1.0/24" value={(adminLists.blockedIps || []).join('\n')} onChange={(e) => handleTextareaChange('blockedIps', e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="admin-uas">User-Agents para Bloquear</Label>
+                        <Label htmlFor="admin-uas">Seus User-Agents para Bloquear</Label>
                         <Textarea id="admin-uas" className="min-h-48 font-code" placeholder="BadBot/1.0&#10;MaliciousCrawler" value={(adminLists.blockedUserAgents || []).join('\n')} onChange={(e) => handleTextareaChange('blockedUserAgents', e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="admin-asns">ASNs para Bloquear</Label>
+                        <Label htmlFor="admin-asns">Seus ASNs para Bloquear</Label>
                         <Textarea id="admin-asns" className="min-h-48 font-code" placeholder="12345&#10;67890" value={(adminLists.blockedAsns || []).join('\n')} onChange={(e) => handleTextareaChange('blockedAsns', e.target.value)} />
                     </div>
                 </CardContent>
                 <CardFooter>
                     <Button onClick={handleSave} disabled={isSaving}>
                         {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                        {isSaving ? 'Salvando...' : 'Salvar Listas Globais'}
+                        {isSaving ? 'Salvando...' : 'Salvar Listas Adicionais'}
                     </Button>
                 </CardFooter>
             </Card>
