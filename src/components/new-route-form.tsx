@@ -593,7 +593,9 @@ AhrefsBot" className="min-h-32 font-code" {...field} />
                      <ol className="list-decimal list-inside space-y-2">
                         <li>Adicione o seguinte código HTML no `<body>` da sua <span className="font-semibold">URL Real</span>:</li>
                     </ol>
-                     <CodeBlock text={`<div style="opacity: 0; position: absolute; top: 0; left: 0; height: 1px; width: 1px; z-index: -1;">\n  <a href="https://example.com/bot-trap">Não clique aqui</a>\n</div>`} />
+                     <CodeBlock text={`<div style="opacity: 0; position: absolute; top: 0; left: 0; height: 1px; width: 1px; z-index: -1;">
+  <a href="https://example.com/bot-trap">Não clique aqui</a>
+</div>`} />
                     <p>
                         2. Crie uma regra no servidor ou na sua aplicação para banir qualquer visitante que acesse a URL <code className="font-code text-primary">/bot-trap</code>.
                     </p>
