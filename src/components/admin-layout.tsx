@@ -2,7 +2,7 @@
 "use client"
 import Link from "next/link"
 import React from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2 } from "lucide-react"
 import {
   SidebarProvider,
@@ -22,8 +22,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const { userData, loading: userLoading } = useUserData();
+  const router = useRouter()
+  const { user, userData, loading: userLoading } = useUserData();
   const isActive = (path: string) => pathname === path
+
+  const handleRedirectToLogin = () => {
+    router.push('/login');
+  };
 
   if (userLoading) {
     return (
@@ -34,7 +39,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!userData?.admin) {
+  // After loading, if user is not logged in or userData is null (or not admin), deny access.
+  if (!user || !userData?.admin) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background p-4">
         <Alert variant="destructive" className="max-w-md">
@@ -42,7 +48,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <AlertTitle>Acesso Negado</AlertTitle>
           <AlertDescription>
             Você não tem permissão para visualizar esta página. Por favor, faça login com uma conta de administrador.
-            <Link href="/login" className="font-bold underline ml-2">Ir para o Login</Link>
+            <button onClick={handleRedirectToLogin} className="font-bold underline ml-2">Ir para o Login</button>
           </AlertDescription>
         </Alert>
       </div>

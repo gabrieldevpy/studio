@@ -3,36 +3,44 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { db, admin } from '@/lib/firebase/server';
 import { headers } from 'next/headers';
 
-async function verifyAdmin(request: NextRequest): Promise<{ isAdmin: boolean; uid: string | null; error?: string }> {
-  const authorization = headers().get('Authorization');
-  if (!authorization || !authorization.startsWith('Bearer ')) {
-    return { isAdmin: false, uid: null, error: 'No authorization token.' };
-  }
-  const idToken = authorization.split('Bearer ')[1];
-
+// This function verifies the Firebase ID token and checks the user's admin status in Firestore.
+async function verifyAdmin(idToken: string): Promise<{ isAdmin: boolean; uid: string | null; error?: string }> {
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken, true); // true for checkRevoked
-    
-    // For added security, check the user document in Firestore as well.
-    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
-    
+    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const uid = decodedToken.uid;
+
+    const userDoc = await db.collection('users').doc(uid).get();
+
     if (!userDoc.exists || !userDoc.data()?.admin) {
-        return { isAdmin: false, uid: decodedToken.uid, error: 'User is not an admin in Firestore.' };
+      return { isAdmin: false, uid, error: 'User is not an admin.' };
     }
 
-    return { isAdmin: true, uid: decodedToken.uid };
+    return { isAdmin: true, uid };
   } catch (error: any) {
     console.error('Error verifying admin token:', error.code, error.message);
-    return { isAdmin: false, uid: null, error: `Token verification failed: ${error.message}` };
+    // Return a specific error message based on the error code
+    if (error.code === 'auth/id-token-expired') {
+      return { isAdmin: false, uid: null, error: 'Token has expired.' };
+    }
+    return { isAdmin: false, uid: null, error: 'Invalid token.' };
   }
 }
 
 export async function GET(request: NextRequest) {
-  const { isAdmin: is_admin, uid, error } = await verifyAdmin(request);
+  const authorization = headers().get('Authorization');
+  if (!authorization || !authorization.startsWith('Bearer ')) {
+    return new NextResponse(JSON.stringify({ error: 'Unauthorized', details: 'Missing or malformed Authorization header.' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
 
-  if (!is_admin) {
-    console.warn(`Admin access check failed for UID ${uid}: ${error}`);
-    return new NextResponse(JSON.stringify({ error: 'Unauthorized', details: error }), {
+  const idToken = authorization.split('Bearer ')[1];
+  const { isAdmin, uid, error } = await verifyAdmin(idToken);
+
+  if (!isAdmin) {
+    console.warn(`Admin access denied for UID ${uid}: ${error}`);
+    return new NextResponse(JSON.stringify({ error: 'Forbidden', details: error }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -70,6 +78,9 @@ export async function GET(request: NextRequest) {
 
   } catch (dbError) {
     console.error('Error fetching admin stats:', dbError);
-    return new NextResponse('Internal Server Error', { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Internal Server Error', details: 'Failed to fetch database statistics.' }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
