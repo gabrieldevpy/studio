@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Dynamically import the form component with SSR disabled
 const NewRouteForm = dynamic(() => import('@/components/new-route-form').then(mod => mod.NewRouteForm), {
   ssr: false,
   loading: () => (
@@ -27,7 +28,6 @@ const NewRouteForm = dynamic(() => import('@/components/new-route-form').then(mo
     </div>
   ),
 });
-
 
 export default function NewRoutePage() {
   return (
