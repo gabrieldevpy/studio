@@ -85,11 +85,6 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                  <Link href="/admin/analytics"><BarChart /><span>Análises</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-             <SidebarMenuItem>
-              <SidebarMenuButton href="/admin/bot-wiki" asChild isActive={isActive('/admin/bot-wiki')} tooltip="Bot Wiki">
-                 <Link href="/admin/bot-wiki"><Bot /><span>Bot Wiki</span></Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton href="/admin/settings" asChild isActive={isActive('/admin/settings')} tooltip="Configurações">
                  <Link href="/admin/settings"><Settings /><span>Configurações</span></Link>

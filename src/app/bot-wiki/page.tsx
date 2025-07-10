@@ -4,7 +4,7 @@
 import { Bot, Clipboard, Check, ExternalLink } from "lucide-react";
 import React, { useState } from "react";
 import withAuth from "@/components/with-auth";
-import { AdminLayout } from "@/components/admin-layout";
+import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +46,7 @@ function BotWikiPage() {
   const regexExample = `/(facebookexternalhit|Facebot|Googlebot|Googlebot-Image|Googlebot-Video|AdsBot-Google|bingbot|Bytespider|GPTBot|ClaudeBot|Perplexity-User)/i`;
 
   return (
-    <AdminLayout>
+    <DashboardLayout>
       <div className="flex items-center mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2"><Bot className="h-8 w-8 text-primary"/> Bot Wiki & Central de Inteligência</h1>
       </div>
@@ -169,7 +169,7 @@ function BotWikiPage() {
         </Card>
 
       </div>
-    </AdminLayout>
+    </DashboardLayout>
   );
 }
 
