@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { Check, Clipboard, Discord, Webhook } from "lucide-react";
+import { Check, Clipboard, Webhook } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const CodeBlock = ({ text }: { text: string }) => {
@@ -39,18 +39,17 @@ export default function WebhooksPage() {
     const [webhookUrl, setWebhookUrl] = useState("");
 
     const handleSave = () => {
-        if (webhookUrl && webhookUrl.startsWith("https://discord.com/api/webhooks/")) {
-            // Here you would save the webhookUrl to your database
+        if (webhookUrl && (webhookUrl.startsWith("https://discord.com/api/webhooks/") || webhookUrl.startsWith("https://hooks.slack.com/"))) {
             console.log("Saving Webhook URL:", webhookUrl);
             toast({
                 title: "Webhook Salvo!",
-                description: "Seu webhook do Discord foi salvo com sucesso.",
+                description: "Seu webhook foi salvo com sucesso.",
             });
         } else {
             toast({
                 variant: "destructive",
                 title: "URL Inválida",
-                description: "Por favor, insira uma URL de webhook do Discord válida.",
+                description: "Por favor, insira uma URL de webhook válida (Discord ou Slack).",
             });
         }
     };
@@ -65,14 +64,14 @@ export default function WebhooksPage() {
                 <div className="lg:col-span-3">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Webhook className="text-primary"/> Configurar Webhook do Discord</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Webhook className="text-primary"/> Configurar Webhook</CardTitle>
                             <CardDescription>
-                                Receba notificações em tempo real no seu servidor do Discord sobre eventos importantes.
+                                Receba notificações em tempo real no seu servidor do Discord ou canal do Slack sobre eventos importantes.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                <Label htmlFor="webhook-url">URL do Webhook do Discord</Label>
+                                <Label htmlFor="webhook-url">URL do Webhook</Label>
                                 <Input
                                     id="webhook-url"
                                     type="url"
@@ -81,7 +80,7 @@ export default function WebhooksPage() {
                                     onChange={(e) => setWebhookUrl(e.target.value)}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Cole a URL do webhook que você criou no seu servidor do Discord.
+                                    Cole a URL do webhook que você criou no seu servidor do Discord ou workspace do Slack.
                                 </p>
                             </div>
                         </CardContent>
@@ -93,29 +92,28 @@ export default function WebhooksPage() {
                 <div className="lg:col-span-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Discord />Como obter a URL do Webhook</CardTitle>
+                            <CardTitle className="flex items-center gap-2"><Webhook />Como obter a URL do Webhook</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 text-sm">
+                            <p className="font-semibold text-foreground">Discord:</p>
                             <div className="flex items-start gap-4">
                                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold flex-shrink-0">1</div>
                                 <p>No seu servidor do Discord, vá em <strong>Configurações do Servidor &gt; Integrações</strong>.</p>
                             </div>
                             <div className="flex items-start gap-4">
                                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold flex-shrink-0">2</div>
-                                <p>Clique em <strong>"Criar Webhook"</strong> (ou "Ver Webhooks" se já tiver algum).</p>
+                                <p>Clique em <strong>"Criar Webhook"</strong> e depois em <strong>"Copiar URL do Webhook"</strong>.</p>
                             </div>
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold flex-shrink-0">3</div>
-                                <p>Clique no webhook recém-criado (ex: "Capitão Gancho") e depois em <strong>"Copiar URL do Webhook"</strong>.</p>
+                            <Separator />
+                             <p className="font-semibold text-foreground">Slack:</p>
+                             <div className="flex items-start gap-4">
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold flex-shrink-0">1</div>
+                                <p>Crie um novo App Slack, vá para <strong>"Incoming Webhooks"</strong> e ative-o.</p>
                             </div>
                              <div className="flex items-start gap-4">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold flex-shrink-0">4</div>
-                                <p>Cole a URL no campo à esquerda e salve.</p>
+                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold flex-shrink-0">2</div>
+                                <p>Clique em <strong>"Add New Webhook to Workspace"</strong>, escolha um canal e copie a URL.</p>
                             </div>
-                            <Separator className="my-4"/>
-                            <p className="text-xs text-muted-foreground">
-                                Você receberá notificações para IPs suspeitos e quando o modo de emergência for ativado.
-                            </p>
                         </CardContent>
                     </Card>
                 </div>
