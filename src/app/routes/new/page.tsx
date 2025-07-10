@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -32,6 +33,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { toast } from "@/hooks/use-toast";
 import React from "react";
 import { generateFakeUrl } from "@/ai/flows/generate-fake-url";
+import { Switch } from "@/components/ui/switch";
 
 const formSchema = z.object({
   slug: z.string().min(3, "O slug deve ter pelo menos 3 caracteres.").regex(/^[a-zA-Z0-9_-]+$/, "O slug pode conter apenas letras, números, hífens e sublinhados."),
@@ -41,6 +43,7 @@ const formSchema = z.object({
   blockedUserAgents: z.string().optional(),
   allowedCountries: z.array(z.string()).optional(),
   blockedCountries: z.array(z.string()).optional(),
+  blockFacebookBots: z.boolean().default(true),
   enableEmergency: z.boolean().default(false),
 });
 
@@ -56,6 +59,7 @@ export default function NewRoutePage() {
       blockedUserAgents: "",
       allowedCountries: [],
       blockedCountries: [],
+      blockFacebookBots: true,
       enableEmergency: true,
     },
   });
@@ -185,6 +189,26 @@ export default function NewRoutePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                   <FormField
+                    control={form.control}
+                    name="blockFacebookBots"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Bloquear Bots do Facebook</FormLabel>
+                          <FormDescription>
+                            Redireciona automaticamente os rastreadores do Facebook (facebookexternalhit, Facebot) para a URL falsa.
+                          </FormDescription>
+                        </div>
+                         <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="blockedIps"
@@ -206,7 +230,7 @@ export default function NewRoutePage() {
                     name="blockedUserAgents"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>User-Agents Bloqueados</FormLabel>
+                        <FormLabel>User-Agents Bloqueados (Adicionais)</FormLabel>
                         <FormControl>
                           <Textarea placeholder="GoogleBot&#10;AhrefsBot" className="min-h-32 font-code" {...field} />
                         </FormControl>
@@ -309,3 +333,5 @@ export default function NewRoutePage() {
     </DashboardLayout>
   );
 }
+
+    

