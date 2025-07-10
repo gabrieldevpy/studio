@@ -2,7 +2,7 @@
 "use client"
 import Link from "next/link"
 import React from "react"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { Users, BarChart, ShieldCheck, Settings, LayoutDashboard, AlertCircle, Loader2 } from "lucide-react"
 import {
   SidebarProvider,
@@ -22,7 +22,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const router = useRouter();
   const { userData, loading: userLoading } = useUserData();
   const isActive = (path: string) => pathname === path
 
@@ -30,6 +29,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="ml-4 text-muted-foreground">Verificando permissões...</p>
       </div>
     );
   }
