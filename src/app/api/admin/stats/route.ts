@@ -19,7 +19,10 @@ async function isAdmin(request: NextRequest): Promise<{is_admin: boolean, uid: s
       return {is_admin: false, uid: decodedToken.uid};
     }
 
-    return {is_admin: userDoc.data()?.admin === true, uid: decodedToken.uid};
+    const userData = userDoc.data();
+    const isUserAdmin = userData?.admin === true;
+
+    return {is_admin: isUserAdmin, uid: decodedToken.uid};
   } catch (error) {
     console.error('Error verifying admin token:', error);
     return {is_admin: false, uid: null};

@@ -19,7 +19,8 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
       return false;
     }
 
-    return userDoc.data()?.admin === true;
+    const userData = userDoc.data();
+    return userData?.admin === true;
   } catch (error) {
     console.error('Error verifying admin token:', error);
     return false;
