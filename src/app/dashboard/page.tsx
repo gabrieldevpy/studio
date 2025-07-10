@@ -108,6 +108,16 @@ export default function DashboardPage() {
     }
   };
 
+  const handleBlockIp = (ip: string) => {
+    // In a real app, you might show a dialog to select which route to apply the block to.
+    // For this mock, we'll just log it and show a toast.
+    console.log(`[Dashboard] Blocking IP ${ip} for all AI-enabled routes.`);
+    toast({
+      title: "IP Bloqueado pela IA",
+      description: `O IP ${ip} foi adicionado à lista de bloqueio.`,
+    })
+  }
+
   const currentData = analyticsData[timeRange];
   const totalClicks = currentData.reduce((acc, entry) => acc + entry.value, 0);
 
@@ -270,7 +280,7 @@ export default function DashboardPage() {
           </Card>
         </div>
         <div className="xl:col-span-1">
-          <StealthEvolution />
+          <StealthEvolution onBlockIp={handleBlockIp} />
         </div>
       </div>
 

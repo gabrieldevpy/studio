@@ -17,9 +17,13 @@ type Suggestion = {
   count: number;
 };
 
+type StealthEvolutionProps = {
+    onBlockIp: (ip: string) => void;
+}
+
 const SUSPICIOUS_IP_THRESHOLD = 3;
 
-export function StealthEvolution() {
+export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
   const [ignoredSuggestions, setIgnoredSuggestions] = useState<string[]>([]);
   const [aiEnabled, setAiEnabled] = useState(true);
 
@@ -54,12 +58,10 @@ export function StealthEvolution() {
 
   const activeSuggestions = suggestions.filter(s => !ignoredSuggestions.includes(s.value));
   
-  const handleCopy = (value: string) => {
-    navigator.clipboard.writeText(value);
-    toast({
-        title: "Copiado!",
-        description: `${value} foi copiado para a área de transferência.`
-    })
+  const handleBlock = (value: string) => {
+    onBlockIp(value);
+    // Also ignore the suggestion after blocking
+    setIgnoredSuggestions(prev => [...prev, value]);
   }
   
   const handleIgnore = (value: string) => {
@@ -112,14 +114,11 @@ export function StealthEvolution() {
                         <p className="font-code text-sm text-primary">{suggestion.value}</p>
                         <p className="text-xs text-muted-foreground mt-1">{suggestion.reason}</p>
                     </div>
-                     <Button size="icon" variant="ghost" className="h-7 w-7 flex-shrink-0" onClick={() => handleCopy(suggestion.value)}>
-                        <Copy className="h-4 w-4" />
-                    </Button>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" className="w-full" onClick={() => handleCopy(suggestion.value)}>
+                  <Button size="sm" className="w-full" onClick={() => handleBlock(suggestion.value)}>
                     <ShieldPlus className="mr-2 h-4 w-4" />
-                    Copiar para Bloquear
+                    Bloquear IP
                   </Button>
                   <Button size="sm" variant="secondary" className="w-full" onClick={() => handleIgnore(suggestion.value)}>
                     <ShieldOff className="mr-2 h-4 w-4" />
