@@ -42,12 +42,13 @@ export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
     const q = query(
       collection(db, "logs"),
       where("userId", "==", user.uid),
-      orderBy("timestamp", "desc"),
       limit(200) 
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const logsData = snapshot.docs.map(doc => doc.data());
+      // Sort logs on the client-side
+      logsData.sort((a, b) => b.timestamp.toMillis() - a.timestamp.toMillis());
       setLogs(logsData);
     }, (error: any) => {
         if (error.code === 'failed-precondition') {
