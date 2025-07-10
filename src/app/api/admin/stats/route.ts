@@ -4,10 +4,10 @@ import { db, admin } from '@/lib/firebase/server';
 import { headers } from 'next/headers';
 
 // This function checks if the user making the request is an admin
-async function isAdmin(request: NextRequest): Promise<{is_admin: boolean, uid: string | null}> {
+async function isAdmin(request: NextRequest): Promise<{is_admin: boolean, uid: string | null, error?: string}> {
   const authorization = headers().get('Authorization');
   if (!authorization || !authorization.startsWith('Bearer ')) {
-    return {is_admin: false, uid: null};
+    return {is_admin: false, uid: null, error: 'No authorization token.'};
   }
   const idToken = authorization.split('Bearer ')[1];
 
@@ -16,23 +16,32 @@ async function isAdmin(request: NextRequest): Promise<{is_admin: boolean, uid: s
     const userDoc = await db.collection('users').doc(decodedToken.uid).get();
     
     if (!userDoc.exists) {
-      return {is_admin: false, uid: decodedToken.uid};
+      return {is_admin: false, uid: decodedToken.uid, error: 'User document not found.'};
     }
 
     const userData = userDoc.data();
     const isUserAdmin = userData?.admin === true;
 
     return {is_admin: isUserAdmin, uid: decodedToken.uid};
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error verifying admin token:', error);
-    return {is_admin: false, uid: null};
+    return {is_admin: false, uid: null, error: error.message};
   }
 }
 
 export async function GET(request: NextRequest) {
-  const { is_admin, uid } = await isAdmin(request);
-  if (!is_admin || !uid) {
+  const { is_admin, uid, error } = await isAdmin(request);
+
+  if (error) {
+    console.log(`Admin check failed: ${error}`);
+  }
+  
+  if (!is_admin) {
     return new NextResponse('Unauthorized', { status: 403 });
+  }
+
+  if (!uid) {
+     return new NextResponse('Unauthorized: Invalid UID', { status: 403 });
   }
 
   try {
