@@ -39,7 +39,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { DashboardTour } from "@/components/dashboard-tour"
 import {
   Select,
   SelectContent,
@@ -58,7 +57,7 @@ import { useUserData } from "@/hooks/use-user-data";
 type Route = {
   id: string;
   slug: string;
-  realUrl: string;
+  realUrl: string | string[];
   fakeUrl: string;
   status: string; // This might need to be derived or stored
   emergency: boolean;
@@ -217,7 +216,6 @@ function DashboardPage() {
 
   return (
     <DashboardLayout>
-      <DashboardTour />
       <div className="flex items-center mb-6" id="tour-step-1">
         <div className="flex-1">
           <h1 className="text-3xl font-bold">Painel</h1>
