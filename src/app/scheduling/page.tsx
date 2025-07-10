@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { v4 as uuidv4 } from 'uuid';
 import withAuth from '@/components/with-auth';
+import { StealthEvolution } from '@/components/stealth-evolution';
 
 type TimeRule = {
   id: string;
@@ -136,6 +137,15 @@ function SchedulingPage() {
             });
             setRuleToDelete(null);
         }
+    };
+
+    const handleBlockIp = (ip: string, slug: string) => {
+        // This is a placeholder for the actual implementation
+        console.log(`Blocking IP ${ip} for route /${slug}`);
+        toast({
+            title: "IP Bloqueado pela IA",
+            description: `O IP ${ip} foi adicionado à lista de bloqueio da rota /${slug}.`,
+        });
     };
     
     const isFormOpen = isAdding || !!ruleToEdit;
@@ -250,15 +260,7 @@ function SchedulingPage() {
                             </form>
                         </Card>
                      ) : (
-                        <Card className="bg-muted/50 border-dashed">
-                            <CardHeader>
-                                <CardTitle>Gatilhos Inteligentes</CardTitle>
-                                <CardDescription>Automações baseadas em eventos, como detecção de URL offline ou picos de tráfego suspeito.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex items-center justify-center h-32">
-                                <p className="text-sm text-muted-foreground">Em breve...</p>
-                            </CardContent>
-                        </Card>
+                        <StealthEvolution onBlockIp={handleBlockIp} />
                      )}
                 </div>
             </div>

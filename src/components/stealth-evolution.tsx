@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { Lightbulb, ShieldPlus, ShieldOff, BrainCircuit } from "lucide-react";
+import { ShieldPlus, ShieldOff, BrainCircuit } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MOCK_LOGS } from "@/lib/mock-logs";
@@ -18,13 +18,13 @@ type Suggestion = {
   slug: string;
 };
 
-type AiSuggestionsProps = {
+type StealthEvolutionProps = {
     onBlockIp: (ip: string, slug: string) => void;
 }
 
 const SUSPICIOUS_IP_THRESHOLD = 3;
 
-export function AiSuggestions({ onBlockIp }: AiSuggestionsProps) {
+export function StealthEvolution({ onBlockIp }: StealthEvolutionProps) {
   const [ignoredSuggestions, setIgnoredSuggestions] = useState<string[]>([]);
   const [aiEnabled, setAiEnabled] = useState(true);
 
@@ -90,7 +90,7 @@ export function AiSuggestions({ onBlockIp }: AiSuggestionsProps) {
             <div className="flex-1">
                 <CardTitle className="flex items-center gap-2">
                 <BrainCircuit className="text-primary" />
-                Motor de IA
+                Motor de IA (StealthEvolution)
                 </CardTitle>
                 <CardDescription>
                 Sugestões da IA para otimizar sua proteção.

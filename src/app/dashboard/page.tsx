@@ -45,7 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { AiSuggestions } from "@/components/ai-suggestions";
+import { StealthEvolution } from "@/components/stealth-evolution";
 import withAuth from "@/components/with-auth";
 import { auth } from "@/lib/firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -338,7 +338,7 @@ function DashboardPage() {
           </Card>
         </div>
         <div className="xl:col-span-1">
-          <AiSuggestions onBlockIp={handleBlockIp} />
+          <StealthEvolution onBlockIp={handleBlockIp} />
         </div>
       </div>
 
